@@ -6,18 +6,18 @@ from dataclasses import dataclass
 from typing import Optional
 
 # Import bot implementations
-# from stacks.bots.pin_auth_bot import PinAuthBot
-# from stacks.bots.address_change_bot import AddressChangeBot
-# from stacks.bots.agent_busy_bot import AgentBusyBot
-# from stacks.bots.menu_language_bot import MenuLanguageBot
-# from stacks.bots.office_closed_bot import OfficeClosedBot
-from stacks.bots.yes_no_bot import YesNoBot
-# from stacks.bots.non_emergency_menu_bot import NonEmergencyMenuBot
-# from stacks.bots.city_menu_bot import CityMenuBot
+# from .bots.pin_auth_bot import PinAuthBot
+# from .bots.address_change_bot import AddressChangeBot
+# from .bots.agent_busy_bot import AgentBusyBot
+# from .bots.menu_language_bot import MenuLanguageBot
+# from .bots.office_closed_bot import OfficeClosedBot
+from .bots.yes_no_bot import YesNoBot
+# from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
+# from .bots.city_menu_bot import CityMenuBot
 
 # Import constructs
-from stacks.constructs.lex_role import LexRole
-from stacks.constructs.throttled_deploy import throttled_deploy
+from .constructs.lex_role import LexRole
+from .constructs.throttled_deploy import throttled_deploy
 
 # Define stack properties
 @dataclass

@@ -4,12 +4,10 @@ from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_lex as lex
 from aws_cdk.aws_lex import CfnBot, CfnBotAlias, CfnBotVersion
 from constructs import Construct
-from constructs.lex_role import LexRole
-from constructs.update_neural_engine import UpdateNeuralEngine
-from utils import hash_code
-
+from .lex_role import LexRole
+from .update_neural_engine import UpdateNeuralEngine
+from .associate_lex_bot import AssociateLexBot
 from lex_defaults import LexDefaults
-from constructs.associate_lex_bot import AssociateLexBot
 from dataclasses import dataclass
 from typing import TypedDict, List, Optional
 
