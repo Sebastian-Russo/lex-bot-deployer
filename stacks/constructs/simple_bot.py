@@ -3,6 +3,8 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_lex as lex
 from aws_cdk.aws_lex import CfnBot, CfnBotAlias, CfnBotVersion
+from aws_cdk import aws_logs as logs
+from aws_cdk import aws_s3 as s3
 from constructs import Construct
 from .lex_role import LexRole
 from .update_neural_engine import UpdateNeuralEngine
@@ -65,57 +67,47 @@ class SimpleLocale:
     code_hook: Optional[CodeHook] = None
 
 
-class SimpleBotProps:
-    def __init__(
-        self,
-        name: str,
-        locales: List[SimpleLocale],
-        connect_instance_arn: str,
-        description: Optional[str] = None,
-        role: Optional[iam.IRole] = None,
-        idle_session_ttl_in_seconds: Optional[int] = None,
-        nlu_confidence_threshold: Optional[float] = None,
-        log_group=None,
-        audio_bucket=None,
-    ):
-        self.name = name
-        self.description = description
-        self.locales = locales
-        self.role = role
-        self.idle_session_ttl_in_seconds = idle_session_ttl_in_seconds
-        self.nlu_confidence_threshold = nlu_confidence_threshold
-        self.connect_instance_arn = connect_instance_arn
-        self.log_group = log_group
-        self.audio_bucket = audio_bucket
-
-
 class SimpleBot(Construct):
     """
     Defines a simplified interface for creating a lex bot in amazon connect.
     Use this as a pattern or extend/modify/fork this class for more complex cases.
     """
 
-    def __init__(
-        self,
-        scope: Construct,
-        id: str,
-        props: SimpleBotProps
-    ):
-        super().__init__(scope, id)
-        self.props = props
+    def __init__(self, scope: Construct, id: str, *,
+                 name: str,
+                 description: Optional[str] = None,
+                 locales: List[Dict],
+                 role: Optional[iam.IRole] = None,
+                 log_group: Optional[logs.LogGroup] = None,
+                 audio_bucket: Optional[s3.Bucket] = None,
+                 connect_instance_arn: Optional[str] = None,
+                 idle_session_ttl_in_seconds: Optional[int] = None,
+                 nlu_confidence_threshold: Optional[float] = None,
+                 **kwargs):
+        super().__init__(scope, id, **kwargs)
 
-        name = props.name
-        description = props.description
-        locales = props.locales
-        idle_session_ttl_in_seconds = props.idle_session_ttl_in_seconds or LexDefaults.idle_session_ttl_in_seconds
-        nlu_confidence_threshold = props.nlu_confidence_threshold or LexDefaults.nlu_confidence_threshold
-        log_group = props.log_group
-        connect_instance_arn = props.connect_instance_arn
+        # Store parameters as instance variables
+        self.name = name
+        self.description = description
+        self.locales = locales
+        self.role = role
+        self.log_group = log_group
+        self.audio_bucket = audio_bucket
+        self.connect_instance_arn = connect_instance_arn
+
+        # Ensure we have valid default values
+        if idle_session_ttl_in_seconds is None:
+            idle_session_ttl_in_seconds = 300  # Default to 5 minutes
+        if nlu_confidence_threshold is None:
+            nlu_confidence_threshold = 0.75  # Default to 75%
+
+        self.idle_session_ttl_in_seconds = idle_session_ttl_in_seconds
+        self.nlu_confidence_threshold = nlu_confidence_threshold
 
         # Create or use provided role
-        self.role = props.role or LexRole(
+        self.role = self.role or LexRole(
             self, 'Role',
-            lex_log_group_name=log_group.log_group_name if log_group else None
+            lex_log_group_name=self.log_group.log_group_name if self.log_group else None
         )
 
         # Create bot
@@ -136,14 +128,14 @@ class SimpleBot(Construct):
 
         # Create version with hash to ensure updates
         self.version = CfnBotVersion(
-            self, f"Version{hash_code(self.props)}",
+            self, f"Version{hash_code({'name': self.name, 'locales': self.locales})}",
             bot_id=self.bot.attr_id,
             bot_version_locale_specification=[{
-                "locale_id": l.locale_id,
+                "locale_id": locale["locale_id"],
                 "bot_version_locale_details": {
                     "source_bot_version": "DRAFT"
                 }
-            } for l in locales]
+            } for locale in self.locales]
         )
 
         # Create alias
@@ -157,36 +149,46 @@ class SimpleBot(Construct):
         )
 
         # Add permissions for lambdas
-        for l in props.locales:
-            if l.code_hook and l.code_hook.lambda_:
-                l.code_hook.lambda_.add_permission(
-                    f"lex-lambda-invoke-{l.locale_id}",
-                    principal=iam.ServicePrincipal('lexv2.amazonaws.com'),
-                    action='lambda:InvokeFunction',
-                    source_arn=self.alias.attr_arn
+        for locale in self.locales:
+            if locale.get('code_hook') and locale['code_hook'].get('lambda_'):
+                locale['code_hook']['lambda_'].add_permission(
+                    f"lex-lambda-invoke-{locale['locale_id']}",
+                    principal=iam.ServicePrincipal("lexv2.amazonaws.com"),
+                    action="lambda:InvokeFunction",
+                    source_arn=f"arn:aws:lex:{self.region}:{self.account}:bot/{self.bot.attr_id}/*/*"
                 )
 
+        # Associate with connect if provided
+        if self.connect_instance_arn:
+            for locale in self.locales:
+                if locale.get('code_hook') and locale['code_hook'].get('lambda_'):
+                    locale['code_hook']['lambda_'].add_permission(
+                        f"connect-lambda-invoke-{locale['locale_id']}",
+                        principal=iam.ServicePrincipal("connect.amazonaws.com"),
+                        action="lambda:InvokeFunction",
+                        source_arn=f"arn:aws:connect:{self.region}:{self.account}:instance/*"
+                    )
+
+            AssociateLexBot(
+                self, 'Association',
+                connect_instance_arn=self.connect_instance_arn,
+                alias=self.alias
+            )
+
         # Update neural engine for locales that need it
-        neural_locales = [l for l in props.locales if (l.engine or LexDefaults.engine) == 'neural']
+        neural_locales = [l for l in self.locales if (l.get('engine') or LexDefaults.engine) == 'neural']
         for l in neural_locales:
-            id = f"{l.locale_id}Neural"
+            id = f"{l['locale_id']}Neural"
             engine_update = UpdateNeuralEngine(
                 self, id,
                 bot_id=self.bot.attr_id,
-                description=l.description,
-                locale_id=l.locale_id,
-                nlu_intent_confidence_threshold=nlu_confidence_threshold,
-                voice_id=l.voice_id
+                description=l.get('description'),
+                locale_id=l['locale_id'],
+                nlu_intent_confidence_threshold=self.nlu_confidence_threshold,
+                voice_id=l['voice_id']
             )
             self.version.node.add_dependency(engine_update)
             self.alias.node.add_dependency(engine_update)
-
-        # Associate bot with Connect instance
-        AssociateLexBot(
-            self, 'Association',
-            connect_instance_arn=connect_instance_arn,
-            alias=self.alias
-        )
 
     def _map_locales(self, locales, nlu_confidence_threshold):
         """Map SimpleLocale objects to the format expected by CfnBot"""
@@ -194,98 +196,75 @@ class SimpleBot(Construct):
 
     def _format_locale(self, locale, nlu_confidence_threshold):
         """Format a single locale for CfnBot"""
-        dialog_code_hook = locale.code_hook.dialog if locale.code_hook else False
-        fulfillment_code_hook = locale.code_hook.fulfillment if locale.code_hook else False
+        # Get code hooks from locale using safe access
+        code_hook = locale.get('code_hook', {})
+        dialog_code_hook = code_hook.get('dialog', False)
+        fulfillment_code_hook = code_hook.get('fulfillment', False)
 
         return {
-            "locale_id": locale.locale_id,
+            "locale_id": locale['locale_id'],
+            "description": locale.get('description'),
             "nlu_confidence_threshold": nlu_confidence_threshold,
             "voice_settings": {
-                "voice_id": locale.voice_id
+                "voice_id": locale['voice_id']
             },
-            "slot_types": [self._transform_slot_type(s) for s in (locale.slot_types or [])],
-            "intents": [
-                *[{
-                    "name": intent.name,
-                    "dialog_code_hook": {"enabled": dialog_code_hook},
-                    "fulfillment_code_hook": {
-                        "enabled": fulfillment_code_hook,
-                        "post_fulfillment_status_specification": self._post_fulfillment_prompt(intent.fulfillment_prompt)
-                    },
-                    "sample_utterances": [{"utterance": u} for u in intent.utterances],
-                    "slot_priorities": [{"slot_name": slot.name, "priority": i + 1}
-                                       for i, slot in enumerate(intent.slots or [])],
-                    "slots": self._transform_slots(intent),
-                    "intent_confirmation_setting": self._transform_intent_confirmation(intent.confirmation_prompt)
-                } for intent in locale.intents],
-                {
-                    "name": "FallbackIntent",
-                    "dialog_code_hook": {"enabled": dialog_code_hook},
-                    "fulfillment_code_hook": {"enabled": fulfillment_code_hook},
-                    "parent_intent_signature": "AMAZON.FallbackIntent"
-                }
-            ]
-        }
-
-    def _transform_slot_type(self, slot_type: SimpleSlotType) -> dict:
-        """Transform a SimpleSlotType to CfnBot.SlotTypeProperty"""
-        return {
-            "name": slot_type.name,
-            "slot_type_values": [{
-                "sample_value": {"value": v.sample_value},
-                "synonyms": [{"value": s} for s in (v.synonyms or [])]
-            } for v in slot_type.values],
-            "value_selection_setting": {
-                "resolution_strategy": slot_type.resolution_strategy or "ORIGINAL_VALUE"
-            },
-            "description": slot_type.description or ""
-        }
-
-    def _transform_slots(self, intent: SimpleIntent) -> List[dict]:
-        """Transform SimpleSlot list to CfnBot.SlotProperty list"""
-        if not intent.slots:
-            return []
-
-        return [{
-            "name": slot.name,
-            "slot_type_name": slot.slot_type_name,
-            "description": slot.description,
-            "value_elicitation_setting": {
-                "slot_constraint": "Required" if slot.required else "Optional",
-                "prompt_specification": {
-                    "allow_interrupt": slot.allow_interrupt if slot.allow_interrupt is not None else LexDefaults.slot_allow_interrupt,
-                    "max_retries": slot.max_retries if slot.max_retries is not None else LexDefaults.slot_retries,
-                    "message_groups_list": [{
-                        "message": {
-                            "plain_text_message": {
-                                "value": message
-                            }
-                        }
-                    } for message in slot.elicitation_messages]
-                }
-            }
-        } for slot in intent.slots]
-
-    def _transform_intent_confirmation(self, prompt: Optional[str]) -> Optional[dict]:
-        """Transform confirmation prompt to IntentConfirmationSettingProperty"""
-        if not prompt:
-            return None
-
-        return {
-            "prompt_specification": {
-                "max_retries": 3,
-                "message_groups_list": [{
-                    "message": {
-                        "plain_text_message": {
-                            "value": prompt
-                        }
+            "intents": locale['intents'],
+            "bot_locale_setting": {
+                "enabled": True,
+                "code_hook_specification": {
+                    "lambda_code_hook": {
+                        "code_hook_interface_version": "1.0",
+                        "lambda_arn": locale['code_hook']['lambda_'].function_arn
                     }
-                }]
+                } if code_hook.get('lambda_') else None
             }
         }
 
-    def _post_fulfillment_prompt(self, prompt: Optional[str]) -> Optional[dict]:
-        """Transform fulfillment prompt to PostFulfillmentStatusSpecificationProperty"""
+    def _transform_slot_type(self, slot_type: dict) -> dict:
+        """Transform slot type dictionary to Lex format"""
+        return {
+            "name": slot_type.get("name"),
+            "description": slot_type.get("description"),
+            "slot_type_name": slot_type.get("name"),
+            "external_source_setting": {
+                "grammar_slot_type_setting": {
+                    "source": slot_type.get("grammar_source")
+                }
+            } if slot_type.get("grammar_source") else None,
+            "slot_type_values": [{"sample_value": {"value": v}} for v in slot_type.get("values", [])],
+            "value_selection_setting": {
+                "resolution_strategy": slot_type.get("resolution_strategy", "OriginalValue")
+            }
+        }
+
+    def _transform_slots(self, intent: dict) -> List[dict]:
+        """Transform intent slots to Lex format"""
+        return [{
+            "name": slot.get("name"),
+            "description": slot.get("description"),
+            "slot_type_name": slot.get("slot_type"),
+            "value_elicitation_setting": {
+                "prompt_specification": self._transform_prompt(slot.get("prompt")),
+                "sample_utterances": [{"utterance": u} for u in slot.get("sample_utterances", [])],
+                "default_value_specification": self._transform_default_value(slot.get("default_value"))
+            },
+            "obfuscation_setting": {
+                "obfuscation_setting_type": "None"
+            }
+        } for slot in intent.get("slots", [])]
+
+    def _transform_intent_confirmation(self, prompt: dict) -> dict:
+        """Transform prompt dictionary to Lex format for intent confirmation"""
+        return {
+            "prompt_specification": self._transform_prompt(prompt),
+            "declination_response": {
+                "message_groups": self._transform_message_groups(prompt.get("declination_message_groups", [])),
+                "allow_interrupt": prompt.get("declination_allow_interrupt", True)
+            }
+        }
+
+    def _post_fulfillment_prompt(self, prompt: dict) -> dict:
+        """Transform prompt dictionary to Lex format"""
         if not prompt:
             return None
 
@@ -294,59 +273,56 @@ class SimpleBot(Construct):
                 "message_groups_list": [{
                     "message": {
                         "plain_text_message": {
-                            "value": prompt
+                            "value": prompt.get("value")
                         }
                     }
                 }]
             }
         }
 
-    def bot_alias_locales(self) -> List[dict]:
-        """Generate BotAliasLocaleSettingsItemProperty list"""
+    def _transform_default_value(self, default_value: dict) -> dict:
+        """Transform default value dictionary to Lex format"""
+        return {
+            "default_value_type": default_value.get("type", "Literal"),
+            "default_value": default_value.get("value", "")
+        }
+
+    def bot_alias_locales(self):
+        """Return bot alias locale settings"""
         return [{
-            "bot_alias_locale_setting": {
-                "enabled": True,
-                "code_hook_specification": {
-                    "lambda_code_hook": {
-                        "code_hook_interface_version": "1.0",
-                        "lambda_arn": l.code_hook.lambda_.function_arn
-                    }
-                } if l.code_hook and l.code_hook.lambda_ else None
-            },
-            "locale_id": l.locale_id
-        } for l in self.props.locales]
+            "locale_id": locale["locale_id"],
+            "enabled": True
+        } for locale in self.locales]
 
-    def conversation_log_settings(self, alias_name: str) -> Optional[dict]:
-        """Generate ConversationLogSettingsProperty"""
-        log_group = self.props.log_group
-        audio_bucket = self.props.audio_bucket
-        name = self.props.name
-
-        if not log_group and not audio_bucket:
-            return None
-
+    def conversation_log_settings(self, alias_name: str):
+        """Return conversation log settings"""
         settings = {}
-
-        if log_group:
-            settings["text_log_settings"] = [{
-                "enabled": True,
-                "destination": {
-                    "cloud_watch": {
-                        "cloud_watch_log_group_arn": log_group.log_group_arn,
-                        "log_prefix": f"{name}/{alias_name}"
-                    }
+        
+        # Add audio log settings if audio bucket exists
+        if self.audio_bucket:
+            settings["audio_log_settings"] = [
+                {
+                    "destination": {
+                        "s3_bucket": {
+                            "bucket_name": self.audio_bucket.bucket_name,
+                            "s3_bucket_arn": self.audio_bucket.bucket_arn
+                        }
+                    },
+                    "enabled": True
                 }
-            }]
-
-        if audio_bucket:
-            settings["audio_log_settings"] = [{
-                "enabled": True,
-                "destination": {
-                    "s3_bucket": {
-                        "s3_bucket_arn": audio_bucket.bucket_arn,
-                        "log_prefix": f"{name}/{alias_name}"
-                    }
+            ]
+        
+        # Add text log settings if log group exists
+        if self.log_group:
+            settings["text_log_settings"] = [
+                {
+                    "destination": {
+                        "cloud_watch": {
+                            "log_group_arn": self.log_group.log_group_arn
+                        }
+                    },
+                    "enabled": True
                 }
-            }]
-
+            ]
+        
         return settings

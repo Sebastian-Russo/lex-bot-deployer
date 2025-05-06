@@ -8,7 +8,6 @@ app = App()
 prefix = 'lex-deploy-demo'
 
 LexStack(app, 'Lex',
-    stack_name=prefix,
     prefix=prefix,
     env=Environment(
         account='308665918648',
