@@ -7,7 +7,8 @@ from constructs import Construct
 from .lex_role import LexRole
 from .update_neural_engine import UpdateNeuralEngine
 from .associate_lex_bot import AssociateLexBot
-from lex_defaults import LexDefaults
+from ..lex_defaults import LexDefaults
+from ..utils.hash_code import hash_code
 from dataclasses import dataclass
 from typing import TypedDict, List, Optional
 
