@@ -1,0 +1,14 @@
+{
+  "recommendations": [
+    "streetsidesoftware.code-spell-checker",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint",
+    "codezombiech.gitignore",
+    "oderwat.indent-rainbow",
+    "kohler.npm-intellisense",
+    "christian-kohler.path-intellisense",
+    "donjayamanne.githistory",
+    "eamodio.gitlens",
+    "mermaidchart.vscode-mermaid-chart"
+  ]
+}

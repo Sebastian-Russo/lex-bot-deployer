@@ -1,28 +1,22 @@
 #!/usr/bin/env python3
+
 import os
+from aws_cdk import App, Environment
+from lib.lex_stack import LexStack  # This will be the Python version of your LexStack
 
-import aws_cdk as cdk
+app = App()
+prefix = 'lex-deploy-demo'
 
-from lex_project_template_py.lex_project_template_py_stack import LexProjectTemplatePyStack
-
-
-app = cdk.App()
-LexProjectTemplatePyStack(app, "LexProjectTemplatePyStack",
-    # If you don't specify 'env', this stack will be environment-agnostic.
-    # Account/Region-dependent features and context lookups will not work,
-    # but a single synthesized template can be deployed anywhere.
-
-    # Uncomment the next line to specialize this stack for the AWS Account
-    # and Region that are implied by the current CLI configuration.
-
-    #env=cdk.Environment(account=os.getenv('CDK_DEFAULT_ACCOUNT'), region=os.getenv('CDK_DEFAULT_REGION')),
-
-    # Uncomment the next line if you know exactly what Account and Region you
-    # want to deploy the stack to. */
-
-    #env=cdk.Environment(account='123456789012', region='us-east-1'),
-
-    # For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html
-    )
+LexStack(app, 'Lex',
+    stack_name=prefix,
+    prefix=prefix,
+    env=Environment(
+        account='308665918648',
+        region='us-east-1'
+    ),
+    connect_instance_arn='arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea',
+    city_hall_queue_arn='arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/queue/dfce6ff7-c5be-4000-8113-8c4a99c72389',
+    city_manager_flow_arn='arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/4a209a43-7401-43f0-ab14-adcc6bb8b781'
+)
 
 app.synth()

@@ -1,0 +1,42 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Current Jest File",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": [
+        "--inspect-brk",
+        "${workspaceRoot}/node_modules/jest/bin/jest.js",
+        "${file}",
+        "--runInBand",
+        "--coverage",
+        "false"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    },
+    {
+      "name": "Debug Current File",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["-r", "ts-node/register"],
+      "args": ["${file}"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Debug App",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["-r", "ts-node/register"],
+      "args": ["${workspaceFolder}/bin/app.ts"]
+    },
+    {
+      "name": "Debug Pipeline",
+      "type": "node",
+      "request": "launch",
+      "runtimeArgs": ["-r", "ts-node/register"],
+      "args": ["${workspaceFolder}/bin/pipeline.ts"]
+    }
+  ]
+}
