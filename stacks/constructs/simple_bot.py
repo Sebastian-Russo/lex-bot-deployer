@@ -7,7 +7,7 @@ from constructs import Construct
 from constructs.lex_role import LexRole
 from constructs.update_neural_engine import UpdateNeuralEngine
 from utils import hash_code
-from constructs.bot_props import BotProps
+
 from lex_defaults import LexDefaults
 from constructs.associate_lex_bot import AssociateLexBot
 from dataclasses import dataclass

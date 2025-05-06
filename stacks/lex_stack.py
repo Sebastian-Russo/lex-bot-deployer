@@ -6,14 +6,14 @@ from dataclasses import dataclass
 from typing import Optional
 
 # Import bot implementations
-from stacks.bots.pin_auth_bot import PinAuthBot
-from stacks.bots.address_change_bot import AddressChangeBot
-from stacks.bots.agent_busy_bot import AgentBusyBot
-from stacks.bots.menu_language_bot import MenuLanguageBot
-from stacks.bots.office_closed_bot import OfficeClosedBot
+# from stacks.bots.pin_auth_bot import PinAuthBot
+# from stacks.bots.address_change_bot import AddressChangeBot
+# from stacks.bots.agent_busy_bot import AgentBusyBot
+# from stacks.bots.menu_language_bot import MenuLanguageBot
+# from stacks.bots.office_closed_bot import OfficeClosedBot
 from stacks.bots.yes_no_bot import YesNoBot
-from stacks.bots.non_emergency_menu_bot import NonEmergencyMenuBot
-from stacks.bots.city_menu_bot import CityMenuBot
+# from stacks.bots.non_emergency_menu_bot import NonEmergencyMenuBot
+# from stacks.bots.city_menu_bot import CityMenuBot
 
 # Import constructs
 from stacks.constructs.lex_role import LexRole
@@ -70,19 +70,20 @@ class LexStack(Stack):
 
         # Create bots with throttled deployment
         bots = [
-            MenuLanguageBot(self, lex_props),
+            # Comment out all bots except YesNoBot
+            # MenuLanguageBot(self, lex_props),
             YesNoBot(self, lex_props),
-            AgentBusyBot(self, lex_props),
-            OfficeClosedBot(self, lex_props),
-            AddressChangeBot(self, lex_props),
-            PinAuthBot(self, lex_props),
+            # AgentBusyBot(self, lex_props),
+            # OfficeClosedBot(self, lex_props),
+            # AddressChangeBot(self, lex_props),
+            # PinAuthBot(self, lex_props),
             # Demonstrates how to use MenuBot as call router
-            NonEmergencyMenuBot(self, lex_props),
-            CityMenuBot(self, {
-                **lex_props,
-                "city_hall_queue_arn": props.city_hall_queue_arn,
-                "city_manager_flow_arn": props.city_manager_flow_arn
-            })
+            # NonEmergencyMenuBot(self, lex_props),
+            # CityMenuBot(self, {
+            #     **lex_props,
+            #     "city_hall_queue_arn": props.city_hall_queue_arn,
+            #     "city_manager_flow_arn": props.city_manager_flow_arn
+            # })
         ]
 
         # Apply throttled deployment to avoid API limits

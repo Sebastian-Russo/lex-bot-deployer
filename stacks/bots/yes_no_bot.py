@@ -1,6 +1,6 @@
-from aws_cdk import Construct
-from constructs.simple_bot import SimpleBot
-from constructs.bot_props import BotProps
+from constructs import Construct
+from stacks.constructs.simple_bot import SimpleBot
+from stacks.constructs.bot_props import BotProps
 
 class YesNoBot(SimpleBot):
     def __init__(self, scope: Construct, props: BotProps):

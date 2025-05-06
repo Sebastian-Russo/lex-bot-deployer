@@ -2,7 +2,7 @@
 
 import os
 from aws_cdk import App, Environment
-from lib.lex_stack import LexStack  # This will be the Python version of your LexStack
+from stacks.lex_stack import LexStack
 
 app = App()
 prefix = 'lex-deploy-demo'
