@@ -117,12 +117,12 @@ class SimpleBot(Construct):
             description=description,
             idle_session_ttl_in_seconds=idle_session_ttl_in_seconds,
             role_arn=self.role.role_arn,
-            data_privacy={"child_directed": False},
+            data_privacy={"ChildDirected": False},
             bot_locales=self._map_locales(locales, nlu_confidence_threshold),
             auto_build_bot_locales=False,  # Turned off to prevent build issues
             test_bot_alias_settings={
-                "bot_alias_locale_settings": self.bot_alias_locales(),
-                "conversation_log_settings": self.conversation_log_settings('TestBotAlias')
+                "botAliasLocaleSettings": self.bot_alias_locales(),
+                "conversationLogSettings": self.conversation_log_settings('TestBotAlias')
             }
         )
 
@@ -187,7 +187,7 @@ class SimpleBot(Construct):
                 nlu_intent_confidence_threshold=self.nlu_confidence_threshold,
                 voice_id=l['voice_id']
             )
-            
+
             # Pass the props object
             engine_update = UpdateNeuralEngine(
                 self, id, props=props

@@ -39,6 +39,13 @@ class YesNoBot(SimpleBot):
                             'nope', 'nah', 'no', 'never', 'no thanks',
                             'no way', 'absolutely not', 'no thank you', 'dont'
                         ],
+                    },
+                    # Add fallback intent for English
+                    {
+                        "name": "FallbackIntent",
+                        "description": "Default intent when no other intent matches",
+                        "parentIntentSignature": "AMAZON.FallbackIntent",
+                        "utterances": []
                     }
                 ]
             },
@@ -60,6 +67,13 @@ class YesNoBot(SimpleBot):
                             'no way', 'absolutamente no', 'ni hablar', 'de ninguna manera',
                             'no es posible'
                         ],
+                    },
+                    # Add fallback intent for Spanish
+                    {
+                        "name": "FallbackIntent",
+                        "description": "Intent por defecto cuando ningún otro intent coincide",
+                        "parentIntentSignature": "AMAZON.FallbackIntent",
+                        "utterances": []
                     }
                 ]
             }

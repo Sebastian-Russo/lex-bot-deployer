@@ -5,9 +5,9 @@ from aws_cdk import App, Environment
 from stacks.lex_stack import LexStack
 
 app = App()
-prefix = 'lex-deploy-demo'
+prefix = 'lex-deploy-demo-py'
 
-LexStack(app, 'Lex',
+LexStack(app, 'LexPy',
     prefix=prefix,
     env=Environment(
         account='308665918648',
