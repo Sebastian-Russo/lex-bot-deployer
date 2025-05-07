@@ -7,7 +7,7 @@ from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 from .lex_role import LexRole
-from .update_neural_engine import UpdateNeuralEngine
+from .update_neural_engine import UpdateNeuralEngine, UpdateNeuralEngineProps
 from .associate_lex_bot import AssociateLexBot
 from ..lex_defaults import LexDefaults
 from ..utils.hash_code import hash_code
@@ -131,9 +131,9 @@ class SimpleBot(Construct):
             self, f"Version{hash_code({'name': self.name, 'locales': self.locales})}",
             bot_id=self.bot.attr_id,
             bot_version_locale_specification=[{
-                "locale_id": locale["locale_id"],
-                "bot_version_locale_details": {
-                    "source_bot_version": "DRAFT"
+                "localeId": locale["locale_id"],
+                "botVersionLocaleDetails": {
+                    "sourceBotVersion": "DRAFT"
                 }
             } for locale in self.locales]
         )
@@ -179,13 +179,18 @@ class SimpleBot(Construct):
         neural_locales = [l for l in self.locales if (l.get('engine') or LexDefaults.engine) == 'neural']
         for l in neural_locales:
             id = f"{l['locale_id']}Neural"
-            engine_update = UpdateNeuralEngine(
-                self, id,
+            # Create UpdateNeuralEngineProps instance
+            props = UpdateNeuralEngineProps(
                 bot_id=self.bot.attr_id,
                 description=l.get('description'),
                 locale_id=l['locale_id'],
                 nlu_intent_confidence_threshold=self.nlu_confidence_threshold,
                 voice_id=l['voice_id']
+            )
+            
+            # Pass the props object
+            engine_update = UpdateNeuralEngine(
+                self, id, props=props
             )
             self.version.node.add_dependency(engine_update)
             self.alias.node.add_dependency(engine_update)
@@ -202,19 +207,19 @@ class SimpleBot(Construct):
         fulfillment_code_hook = code_hook.get('fulfillment', False)
 
         return {
-            "locale_id": locale['locale_id'],
+            "localeId": locale['locale_id'],
             "description": locale.get('description'),
-            "nlu_confidence_threshold": nlu_confidence_threshold,
-            "voice_settings": {
-                "voice_id": locale['voice_id']
+            "nluConfidenceThreshold": nlu_confidence_threshold,
+            "voiceSettings": {
+                "voiceId": locale['voice_id']
             },
             "intents": locale['intents'],
-            "bot_locale_setting": {
+            "botLocaleSetting": {
                 "enabled": True,
-                "code_hook_specification": {
-                    "lambda_code_hook": {
-                        "code_hook_interface_version": "1.0",
-                        "lambda_arn": locale['code_hook']['lambda_'].function_arn
+                "codeHookSpecification": {
+                    "lambdaCodeHook": {
+                        "codeHookInterfaceVersion": "1.0",
+                        "lambdaArn": locale['code_hook']['lambda_'].function_arn
                     }
                 } if code_hook.get('lambda_') else None
             }
@@ -290,39 +295,43 @@ class SimpleBot(Construct):
     def bot_alias_locales(self):
         """Return bot alias locale settings"""
         return [{
-            "locale_id": locale["locale_id"],
-            "enabled": True
+            "localeId": locale["locale_id"],
+            "botAliasLocaleSetting": {
+                "enabled": True
+            }
         } for locale in self.locales]
 
     def conversation_log_settings(self, alias_name: str):
         """Return conversation log settings"""
         settings = {}
-        
+
         # Add audio log settings if audio bucket exists
         if self.audio_bucket:
-            settings["audio_log_settings"] = [
+            settings["audioLogSettings"] = [
                 {
                     "destination": {
-                        "s3_bucket": {
-                            "bucket_name": self.audio_bucket.bucket_name,
-                            "s3_bucket_arn": self.audio_bucket.bucket_arn
+                        "s3Bucket": {
+                            "bucketName": self.audio_bucket.bucket_name,
+                            "s3BucketArn": self.audio_bucket.bucket_arn,
+                            "logPrefix": f"{alias_name}/audio-logs"
                         }
                     },
                     "enabled": True
                 }
             ]
-        
+
         # Add text log settings if log group exists
         if self.log_group:
-            settings["text_log_settings"] = [
+            settings["textLogSettings"] = [
                 {
                     "destination": {
-                        "cloud_watch": {
-                            "log_group_arn": self.log_group.log_group_arn
+                        "cloudWatch": {
+                            "cloudWatchLogGroupArn": self.log_group.log_group_arn,
+                            "logPrefix": f"{alias_name}/text-logs"
                         }
                     },
                     "enabled": True
                 }
             ]
-        
+
         return settings
