@@ -1,10 +1,11 @@
-from typing import List, Optional, Dict, Any, Union
+from typing import List, Optional, Dict, Any, Union, TypedDict
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_lex as lex
 from aws_cdk.aws_lex import CfnBot, CfnBotAlias, CfnBotVersion
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
+from aws_cdk import Stack
 from constructs import Construct
 from .lex_role import LexRole
 from .update_neural_engine import UpdateNeuralEngine, UpdateNeuralEngineProps
@@ -94,6 +95,8 @@ class SimpleBot(Construct):
         self.log_group = log_group
         self.audio_bucket = audio_bucket
         self.connect_instance_arn = connect_instance_arn
+        self.region = Stack.of(scope).region
+        self.account = Stack.of(scope).account
 
         # Ensure we have valid default values
         if idle_session_ttl_in_seconds is None:

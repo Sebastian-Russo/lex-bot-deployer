@@ -1,9 +1,8 @@
 import os
 from constructs import Construct
 from aws_cdk import aws_lambda as lambda_
-from aws_cdk.aws_lambda_python_alpha import PythonFunction
 from aws_cdk import aws_iam as iam
-from ..constructs.simple_bot import SimpleBot
+from ...constructs.simple_bot import SimpleBot
 from typing import Optional
 
 class PinAuthBot(Construct):
@@ -25,14 +24,14 @@ class PinAuthBot(Construct):
         audio_bucket=None,
         **kwargs
     ):
-        super().__init__(scope, id, **kwargs)
+        super().__init__(scope, id)
 
         # Create the Lambda function
-        self.lambda_function = PythonFunction(
+        self.lambda_function = lambda_.Function(
             self, 'Lambda',
-            entry=os.path.join(os.path.dirname(__file__), 'lambda'),  # Assuming you'll create a 'lambda' directory with your handler
-            index='handler.py',  # The Python file name
-            handler='handler',   # The function name
+            runtime=lambda_.Runtime.PYTHON_3_9,
+            handler='handler.handler',
+            code=lambda_.Code.from_asset(os.path.dirname(__file__)),
             environment={
                 'LOGGING_LEVEL': 'debug'
             }
@@ -69,20 +68,50 @@ class PinAuthBot(Construct):
                             "slots": [
                                 {
                                     "name": "accountId",
-                                    "slot_type_name": "AMAZON.AlphaNumeric",
-                                    "elicitation_messages": [
-                                        'May I have your Account Number?',
-                                        'What is your Account Number?'
-                                    ],
-                                    "required": True
+                                    "slotTypeName": "AMAZON.AlphaNumeric",
+                                    "description": "Account number slot",
+                                    "valueElicitationSetting": {
+                                        "slotConstraint": "Required",
+                                        "promptSpecification": {
+                                            "messageGroupsList": [
+                                                {
+                                                    "message": {
+                                                        "plainTextMessage": {
+                                                            "value": "May I have your Account Number?"
+                                                        }
+                                                    },
+                                                    "variations": [
+                                                        {
+                                                            "plainTextMessage": {
+                                                                "value": "What is your Account Number?"
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ],
+                                            "maxRetries": 3
+                                        }
+                                    }
                                 },
                                 {
                                     "name": "accountPin",
-                                    "slot_type_name": "AMAZON.AlphaNumeric",
-                                    "elicitation_messages": [
-                                        'Can you please provide me your PIN number?'
-                                    ],
-                                    "required": True
+                                    "slotTypeName": "AMAZON.AlphaNumeric",
+                                    "description": "Account PIN slot",
+                                    "valueElicitationSetting": {
+                                        "slotConstraint": "Required",
+                                        "promptSpecification": {
+                                            "messageGroupsList": [
+                                                {
+                                                    "message": {
+                                                        "plainTextMessage": {
+                                                            "value": "Can you please provide me your PIN number?"
+                                                        }
+                                                    }
+                                                }
+                                            ],
+                                            "maxRetries": 3
+                                        }
+                                    }
                                 }
                             ]
                         },

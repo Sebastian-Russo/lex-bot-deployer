@@ -12,24 +12,23 @@ def safe_stringify(obj):
     Returns:
         JSON string representation of the object
     """
-    def replacer(key, value):
-        if isinstance(value, Construct):
+    def replacer(obj):
+        """Function for handling non-serializable objects"""
+        if isinstance(obj, Construct):
             # Don't serialize constructs
-            return f"construct-{value.node.id}"
+            return f"construct-{obj.node.id}"
 
-        if callable(value):
+        if callable(obj):
             # Don't serialize functions
             return "{function}"
 
-        if isinstance(value, str) and Token.is_unresolved(value):
+        if isinstance(obj, str) and Token.is_unresolved(obj):
             # Don't serialize unresolved tokens.
             # Token change with each synth, which breaks the hashing operation
             return "{token}"
 
-        return value
+        # For any other non-serializable objects
+        return str(obj)
 
-    class CustomEncoder(json.JSONEncoder):
-        def default(self, obj):
-            return replacer(None, obj)
-
-    return json.dumps(obj, cls=CustomEncoder, default=replacer, indent=2)
+    # Use only the default replacer function approach
+    return json.dumps(obj, default=replacer, indent=2)
