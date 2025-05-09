@@ -84,8 +84,10 @@ class SimpleBot(Construct):
                  connect_instance_arn: Optional[str] = None,
                  idle_session_ttl_in_seconds: Optional[int] = None,
                  nlu_confidence_threshold: Optional[float] = None,
+                 prefix: Optional[str] = None,
                  **kwargs):
-        super().__init__(scope, id, **kwargs)
+        # Only pass scope and id to the Construct base class
+        super().__init__(scope, id)
 
         # Store parameters as instance variables
         self.name = name
@@ -97,6 +99,7 @@ class SimpleBot(Construct):
         self.connect_instance_arn = connect_instance_arn
         self.region = Stack.of(scope).region
         self.account = Stack.of(scope).account
+        self.prefix = prefix  # Store the prefix parameter
 
         # Ensure we have valid default values
         if idle_session_ttl_in_seconds is None:
@@ -271,6 +274,32 @@ class SimpleBot(Construct):
             }
         }
 
+    def _transform_prompt(self, prompt: dict) -> dict:
+        """Transform prompt dictionary to Lex format"""
+        # This method signature was in the original but the implementation was missing
+        # Adding a placeholder implementation to maintain compatibility
+        if not prompt:
+            return None
+        return {
+            "message_groups": self._transform_message_groups(prompt.get("message_groups", [])),
+            "max_retries": prompt.get("max_retries", 2),
+            "allow_interrupt": prompt.get("allow_interrupt", True)
+        }
+
+    def _transform_message_groups(self, message_groups: List[dict]) -> List[dict]:
+        """Transform message groups to Lex format"""
+        # This method was called but not implemented in the original
+        # Adding a placeholder implementation
+        if not message_groups:
+            return []
+        return [{
+            "message": {
+                "plain_text_message": {
+                    "value": group.get("message", "")
+                }
+            }
+        } for group in message_groups]
+
     def _post_fulfillment_prompt(self, prompt: dict) -> dict:
         """Transform prompt dictionary to Lex format"""
         if not prompt:
@@ -290,6 +319,8 @@ class SimpleBot(Construct):
 
     def _transform_default_value(self, default_value: dict) -> dict:
         """Transform default value dictionary to Lex format"""
+        if not default_value:
+            return None
         return {
             "default_value_type": default_value.get("type", "Literal"),
             "default_value": default_value.get("value", "")

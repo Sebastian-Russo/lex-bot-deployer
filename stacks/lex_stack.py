@@ -12,7 +12,7 @@ from .bots.agent_busy_bot import AgentBusyBot
 # from .bots.office_closed_bot import OfficeClosedBot
 from .bots.yes_no_bot import YesNoBot
 # from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
-# from .bots.city_menu_bot import CityMenuBot
+from .bots.city_menu_bot import CityMenuBot
 
 # Import constructs
 from .constructs.lex_role import LexRole
@@ -116,17 +116,17 @@ class LexStack(Stack):
             #     log_group=log_group,
             #     audio_bucket=audio_bucket
             # ),
-            # CityMenuBot(
-            #     self,
-            #     'CityMenuBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     city_hall_queue_arn=city_hall_queue_arn,
-            #     city_manager_flow_arn=city_manager_flow_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket
-            # )
+            CityMenuBot(
+                self,
+                'CityMenuBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                city_hall_queue_arn=city_hall_queue_arn,
+                city_manager_flow_arn=city_manager_flow_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket
+            )
         ]
 
         # Apply throttled deployment to avoid API limits

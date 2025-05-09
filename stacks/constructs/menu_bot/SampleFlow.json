@@ -1,0 +1,129 @@
+{
+  "Version": "2019-10-30",
+  "StartAction": "2ec6967c-acc5-4829-81fb-dd663a48457d",
+  "Metadata": {
+    "entryPointPosition": { "x": 28, "y": 36.8 },
+    "ActionMetadata": {
+      "2ec6967c-acc5-4829-81fb-dd663a48457d": { "position": { "x": 196.8, "y": 17.6 } },
+      "c3ad3c94-0239-49eb-8910-6913d2285cbb": { "position": { "x": 692, "y": 15.2 }, "overrideConsoleVoice": true },
+      "Set Language": { "position": { "x": 430.4, "y": 20.8 }, "isFriendlyName": true, "dynamicParams": [] },
+      "b08d0130-d168-4493-bd08-6b4fe809e96a": {
+        "position": { "x": 943.2, "y": 22.4 },
+        "parameters": { "FlowModuleId": { "displayName": "LexRouterWIP" } },
+        "contactFlowModuleName": "LexRouterWIP"
+      },
+      "b5854c40-bed9-413a-be9d-d2d57a1c19a1": {
+        "position": { "x": 1428, "y": 193.6 },
+        "parameters": { "ContactFlowId": { "useDynamic": true } },
+        "useDynamic": true
+      },
+      "Unhandled Error": { "position": { "x": 1433.6, "y": 384.8 }, "isFriendlyName": true },
+      "7c7a7f3b-80a6-449d-bc28-c15239ff93a1": {
+        "position": { "x": 1197.6, "y": 20 },
+        "conditionMetadata": [
+          {
+            "id": "b468a25f-56ca-47e8-ad4c-15a4efa76c1e",
+            "operator": { "name": "Equals", "value": "Equals", "shortDisplay": "=" },
+            "value": "FlowTransfer"
+          }
+        ]
+      },
+      "824df28c-7870-4aa8-b9de-974f79d6ff0c": { "position": { "x": 1913.6, "y": 398.4 } },
+      "Module Error": { "position": { "x": 1648, "y": 99.2 }, "isFriendlyName": true }
+    },
+    "Annotations": [],
+    "name": "NonEmergency Menu Module Sample Flow",
+    "description": "Demonstrates how to use the NonEmergency Menu Module",
+    "type": "contactFlow",
+    "status": "published",
+    "hash": {}
+  },
+  "Actions": [
+    {
+      "Parameters": { "FlowLoggingBehavior": "Enabled" },
+      "Identifier": "2ec6967c-acc5-4829-81fb-dd663a48457d",
+      "Type": "UpdateFlowLoggingBehavior",
+      "Transitions": { "NextAction": "Set Language" }
+    },
+    {
+      "Parameters": {
+        "TextToSpeechVoice": "${Voice}",
+        "TextToSpeechEngine": "Neural",
+        "TextToSpeechStyle": "Conversational"
+      },
+      "Identifier": "c3ad3c94-0239-49eb-8910-6913d2285cbb",
+      "Type": "UpdateContactTextToSpeechVoice",
+      "Transitions": { "NextAction": "b08d0130-d168-4493-bd08-6b4fe809e96a" }
+    },
+    {
+      "Parameters": { "Attributes": { "lang": "${Lang}" }, "TargetContact": "Current" },
+      "Identifier": "Set Language",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "c3ad3c94-0239-49eb-8910-6913d2285cbb",
+        "Errors": [{ "NextAction": "Unhandled Error", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": {
+        "FlowModuleId": "${ModuleId}"
+      },
+      "Identifier": "b08d0130-d168-4493-bd08-6b4fe809e96a",
+      "Type": "InvokeFlowModule",
+      "Transitions": {
+        "NextAction": "7c7a7f3b-80a6-449d-bc28-c15239ff93a1",
+        "Errors": [{ "NextAction": "Unhandled Error", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": { "ContactFlowId": "$.Attributes.menuModuleDestination" },
+      "Identifier": "b5854c40-bed9-413a-be9d-d2d57a1c19a1",
+      "Type": "TransferToFlow",
+      "Transitions": {
+        "NextAction": "Unhandled Error",
+        "Errors": [{ "NextAction": "Unhandled Error", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": { "Text": "Warning: an unexpected error occured in the flow. Check the flow logs." },
+      "Identifier": "Unhandled Error",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "824df28c-7870-4aa8-b9de-974f79d6ff0c",
+        "Errors": [{ "NextAction": "824df28c-7870-4aa8-b9de-974f79d6ff0c", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": { "ComparisonValue": "$.Attributes.menuModule" },
+      "Identifier": "7c7a7f3b-80a6-449d-bc28-c15239ff93a1",
+      "Type": "Compare",
+      "Transitions": {
+        "NextAction": "Module Error",
+        "Conditions": [
+          {
+            "NextAction": "b5854c40-bed9-413a-be9d-d2d57a1c19a1",
+            "Condition": { "Operator": "Equals", "Operands": ["FlowTransfer"] }
+          }
+        ],
+        "Errors": [{ "NextAction": "Module Error", "ErrorType": "NoMatchingCondition" }]
+      }
+    },
+    {
+      "Parameters": {},
+      "Identifier": "824df28c-7870-4aa8-b9de-974f79d6ff0c",
+      "Type": "DisconnectParticipant",
+      "Transitions": {}
+    },
+    {
+      "Parameters": {
+        "Text": "Warning: an unexpected $.Attributes.menuModule occured in the menu module. Check the flow logs."
+      },
+      "Identifier": "Module Error",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "824df28c-7870-4aa8-b9de-974f79d6ff0c",
+        "Errors": [{ "NextAction": "824df28c-7870-4aa8-b9de-974f79d6ff0c", "ErrorType": "NoMatchingError" }]
+      }
+    }
+  ]
+}

@@ -1,0 +1,260 @@
+{
+  "Version": "2019-10-30",
+  "StartAction": "Get Greeting",
+  "Metadata": {
+    "entryPointPosition": { "x": 82.4, "y": 491.2 },
+    "ActionMetadata": {
+      "Hang Up": { "position": { "x": 1128.8, "y": 333.6 }, "isFriendlyName": true },
+      "e769f7ba-1594-4d67-b87f-23bf8105535d": {
+        "position": { "x": 869.6, "y": 640 },
+        "conditions": [],
+        "conditionMetadata": [
+          {
+            "id": "7556d543-0340-48c9-9c9c-12c533274966",
+            "operator": { "name": "Equals", "value": "Equals", "shortDisplay": "=" },
+            "value": "true"
+          }
+        ]
+      },
+      "Invoke Bot": {
+        "position": { "x": 563.2, "y": 288.8 },
+        "isFriendlyName": true,
+        "parameters": {
+          "Text": { "useDynamic": true },
+          "LexV2Bot": {
+            "AliasArn": {
+              "displayName": "live",
+              "useLexBotDropdown": true,
+              "lexV2BotName": "chime-ivr-poc-dev3-NonEmergency"
+            }
+          }
+        },
+        "useLexBotDropdown": true,
+        "lexV2BotName": "chime-ivr-poc-dev3-NonEmergency",
+        "lexV2BotAliasName": "live",
+        "useDynamic": true,
+        "conditionMetadata": [
+          {
+            "id": "87374aed-3f5d-4898-9ee4-49f43bc106ea",
+            "operator": { "name": "Equals", "value": "Equals", "shortDisplay": "=" },
+            "value": "hangUp"
+          }
+        ]
+      },
+      "Get Greeting": {
+        "position": { "x": 302.4, "y": 472 },
+        "isFriendlyName": true,
+        "parameters": {
+          "LambdaFunctionARN": { "displayName": "chime-ivr-poc-dev3-NonEmergency-info" },
+          "LambdaInvocationAttributes": { "lang": { "useDynamic": true } }
+        },
+        "dynamicMetadata": { "lang": true }
+      },
+      "PhoneTransfer": {
+        "position": { "x": 1455.2, "y": 682.4 },
+        "isFriendlyName": true,
+        "parameters": { "ThirdPartyPhoneNumber": { "useDynamic": true } }
+      },
+      "PhoneTransferError": { "position": { "x": 2008.8, "y": 636.8 }, "isFriendlyName": true, "dynamicParams": [] },
+      "QueueTransferCapacityError": {
+        "position": { "x": 2008.8, "y": 816.8 },
+        "isFriendlyName": true,
+        "dynamicParams": []
+      },
+      "QueueTransfer": {
+        "position": { "x": 1460, "y": 869.6 },
+        "isFriendlyName": true,
+        "parameters": { "QueueId": { "useDynamic": true } },
+        "useDynamic": true
+      },
+      "05df9723-b32b-4097-b043-b5e6712c448d": { "position": { "x": 1748.8, "y": 867.2 } },
+      "QueueTransferError": { "position": { "x": 2008.8, "y": 1003.2 }, "isFriendlyName": true, "dynamicParams": [] },
+      "2ce877da-cea7-46f6-97ba-85c50152f17c": { "position": { "x": 2330.4, "y": 699.2 } },
+      "a90931ce-0d40-4abc-8335-70ca60ba79ee": {
+        "position": { "x": 1185.6, "y": 639.2 },
+        "conditionMetadata": [
+          {
+            "id": "b1678724-218c-46fe-8ac2-0fad9c4d91ea",
+            "operator": { "name": "Equals", "value": "Equals", "shortDisplay": "=" },
+            "value": "PhoneTransfer"
+          },
+          {
+            "id": "629238db-4853-49c0-8704-653adc754630",
+            "operator": { "name": "Equals", "value": "Equals", "shortDisplay": "=" },
+            "value": "QueueTransfer"
+          },
+          {
+            "id": "084119e4-1d3c-43db-91ea-06a0cdf06634",
+            "operator": { "name": "Equals", "value": "Equals", "shortDisplay": "=" },
+            "value": "FlowTransfer"
+          }
+        ]
+      },
+      "FlowTransferError": { "position": { "x": 2015.2, "y": 1292 }, "isFriendlyName": true, "dynamicParams": [] },
+      "FlowTransfer": {
+        "position": { "x": 1465.6, "y": 1121.6 },
+        "isFriendlyName": true,
+        "parameters": { "Attributes": { "menuModuleDestination": { "useDynamic": true } } },
+        "dynamicParams": ["menuModuleDestination"]
+      }
+    },
+    "Annotations": [],
+    "name": "NonEmergency Menu Module",
+    "description": "Handles interactions with the template-v5-pr-check-NonEmergency Lex bot",
+    "status": "published",
+    "hash": {}
+  },
+  "Actions": [
+    { "Parameters": {}, "Identifier": "Hang Up", "Type": "DisconnectParticipant", "Transitions": {} },
+    {
+      "Parameters": { "ComparisonValue": "$.Lex.SessionAttributes.hangUp" },
+      "Identifier": "e769f7ba-1594-4d67-b87f-23bf8105535d",
+      "Type": "Compare",
+      "Transitions": {
+        "NextAction": "a90931ce-0d40-4abc-8335-70ca60ba79ee",
+        "Conditions": [{ "NextAction": "Hang Up", "Condition": { "Operator": "Equals", "Operands": ["true"] } }],
+        "Errors": [{ "NextAction": "a90931ce-0d40-4abc-8335-70ca60ba79ee", "ErrorType": "NoMatchingCondition" }]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "$.External.greeting",
+        "LexV2Bot": { "AliasArn": "${BotArn}" }
+      },
+      "Identifier": "Invoke Bot",
+      "Type": "ConnectParticipantWithLexBot",
+      "Transitions": {
+        "NextAction": "PhoneTransferError",
+        "Conditions": [{ "NextAction": "Hang Up", "Condition": { "Operator": "Equals", "Operands": ["hangUp"] } }],
+        "Errors": [
+          { "NextAction": "e769f7ba-1594-4d67-b87f-23bf8105535d", "ErrorType": "NoMatchingCondition" },
+          { "NextAction": "PhoneTransferError", "ErrorType": "NoMatchingError" }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "LambdaFunctionARN": "${LambdaArn}",
+        "InvocationTimeLimitSeconds": "3",
+        "LambdaInvocationAttributes": { "lang": "$.Attributes.lang" },
+        "ResponseValidation": { "ResponseType": "STRING_MAP" }
+      },
+      "Identifier": "Get Greeting",
+      "Type": "InvokeLambdaFunction",
+      "Transitions": {
+        "NextAction": "Invoke Bot",
+        "Errors": [{ "NextAction": "PhoneTransferError", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": {
+        "ThirdPartyPhoneNumber": "$.Lex.SessionAttributes.destination",
+        "ThirdPartyConnectionTimeLimitSeconds": "60",
+        "ContinueFlowExecution": "False"
+      },
+      "Identifier": "PhoneTransfer",
+      "Type": "TransferParticipantToThirdParty",
+      "Transitions": {
+        "NextAction": "PhoneTransferError",
+        "Errors": [{ "NextAction": "PhoneTransferError", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": { "Attributes": { "menuModule": "PhoneTransferError" }, "TargetContact": "Current" },
+      "Identifier": "PhoneTransferError",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "2ce877da-cea7-46f6-97ba-85c50152f17c",
+        "Errors": [{ "NextAction": "2ce877da-cea7-46f6-97ba-85c50152f17c", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": { "Attributes": { "menuModule": "QueueTransferCapacityError" }, "TargetContact": "Current" },
+      "Identifier": "QueueTransferCapacityError",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "2ce877da-cea7-46f6-97ba-85c50152f17c",
+        "Errors": [{ "NextAction": "2ce877da-cea7-46f6-97ba-85c50152f17c", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": { "QueueId": "$.Lex.SessionAttributes.destination" },
+      "Identifier": "QueueTransfer",
+      "Type": "UpdateContactTargetQueue",
+      "Transitions": {
+        "NextAction": "05df9723-b32b-4097-b043-b5e6712c448d",
+        "Errors": [{ "NextAction": "QueueTransferError", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": {},
+      "Identifier": "05df9723-b32b-4097-b043-b5e6712c448d",
+      "Type": "TransferContactToQueue",
+      "Transitions": {
+        "NextAction": "QueueTransferError",
+        "Errors": [
+          { "NextAction": "QueueTransferCapacityError", "ErrorType": "QueueAtCapacity" },
+          { "NextAction": "QueueTransferError", "ErrorType": "NoMatchingError" }
+        ]
+      }
+    },
+    {
+      "Parameters": { "Attributes": { "menuModule": "QueueTransferError" }, "TargetContact": "Current" },
+      "Identifier": "QueueTransferError",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "2ce877da-cea7-46f6-97ba-85c50152f17c",
+        "Errors": [{ "NextAction": "2ce877da-cea7-46f6-97ba-85c50152f17c", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": {},
+      "Identifier": "2ce877da-cea7-46f6-97ba-85c50152f17c",
+      "Type": "EndFlowModuleExecution",
+      "Transitions": {}
+    },
+    {
+      "Parameters": { "ComparisonValue": "$.Lex.SessionAttributes.action" },
+      "Identifier": "a90931ce-0d40-4abc-8335-70ca60ba79ee",
+      "Type": "Compare",
+      "Transitions": {
+        "NextAction": "PhoneTransferError",
+        "Conditions": [
+          { "NextAction": "PhoneTransfer", "Condition": { "Operator": "Equals", "Operands": ["PhoneTransfer"] } },
+          { "NextAction": "QueueTransfer", "Condition": { "Operator": "Equals", "Operands": ["QueueTransfer"] } },
+          { "NextAction": "FlowTransfer", "Condition": { "Operator": "Equals", "Operands": ["FlowTransfer"] } }
+        ],
+        "Errors": [{ "NextAction": "PhoneTransferError", "ErrorType": "NoMatchingCondition" }]
+      }
+    },
+    {
+      "Parameters": { "Attributes": { "menuModule": "FlowTransferError" }, "TargetContact": "Current" },
+      "Identifier": "FlowTransferError",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "2ce877da-cea7-46f6-97ba-85c50152f17c",
+        "Errors": [{ "NextAction": "2ce877da-cea7-46f6-97ba-85c50152f17c", "ErrorType": "NoMatchingError" }]
+      }
+    },
+    {
+      "Parameters": {
+        "Attributes": { "menuModule": "FlowTransfer", "menuModuleDestination": "$.Lex.SessionAttributes.destination" },
+        "TargetContact": "Current"
+      },
+      "Identifier": "FlowTransfer",
+      "Type": "UpdateContactAttributes",
+      "Transitions": {
+        "NextAction": "2ce877da-cea7-46f6-97ba-85c50152f17c",
+        "Errors": [{ "NextAction": "FlowTransferError", "ErrorType": "NoMatchingError" }]
+      }
+    }
+  ],
+  "Settings": {
+    "InputParameters": [],
+    "OutputParameters": [],
+    "Transitions": [
+      { "DisplayName": "Success", "ReferenceName": "Success", "Description": "" },
+      { "DisplayName": "Error", "ReferenceName": "Error", "Description": "" }
+    ]
+  }
+}
