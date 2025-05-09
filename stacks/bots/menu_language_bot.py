@@ -1,7 +1,9 @@
-from constructs import Construct
-from ..constructs.simple_bot import SimpleBot
-from aws_cdk import aws_iam as iam
 from typing import Optional
+
+from constructs import Construct
+from aws_cdk import aws_iam as iam
+
+from ..constructs.simple_bot import SimpleBot
 
 class MenuLanguageBot(SimpleBot):
     def __init__(
@@ -27,13 +29,12 @@ class MenuLanguageBot(SimpleBot):
                 "intents": [
                     {
                         "name": "Spanish",
-                        "utterances": ['spanish', 'espanol', 'espanyol']
+                        "utterances": ["spanish", "espanol", "espanyol"]
                     },
                     {
                         "name": "English",
-                        "utterances": ['english', 'ingles']
+                        "utterances": ["english", "ingles"]
                     },
-                    # Required fallback intent
                     {
                         "name": "FallbackIntent",
                         "description": "Default intent when no other intent matches",
@@ -48,13 +49,12 @@ class MenuLanguageBot(SimpleBot):
                 "intents": [
                     {
                         "name": "Spanish",
-                        "utterances": ['spanish', 'espanol', 'espanyol']
+                        "utterances": ["spanish", "espanol", "espanyol"]
                     },
                     {
                         "name": "English",
-                        "utterances": ['english', 'ingles']
+                        "utterances": ["english", "ingles"]
                     },
-                    # Required fallback intent
                     {
                         "name": "FallbackIntent",
                         "description": "Intent por defecto cuando ningún otro intent coincide",
