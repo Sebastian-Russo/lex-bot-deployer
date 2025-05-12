@@ -3,8 +3,9 @@ import logging
 import os
 from typing import Dict, Any, Optional
 from .interface import LambdaConfig
-from ....utils.logger import logger
-from ....utils.get_env_var import parse_env_var
+# Since utils is now in the lambda folder, use relative imports
+from .utils.logger import logger
+from .utils.get_env_var import parse_env_var
 
 # Type annotations for Connect event
 class ConnectEvent:
