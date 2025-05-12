@@ -4,12 +4,12 @@ from constructs import Construct
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_connect as connect
-from .lmbda.interface import convert_to_lambda_config, unique_custom_handlers  # Updated path
-from ..simple_bot import SimpleBot
-from ..bot_props import BotProps
-from .models import MenuLocale, MenuAction
-from ...utils.load_flow_content import load_flow_content
-from typing import List, Optional, Dict, Any, Union
+from stacks.constructs.menu_bot.lmbda.interface import convert_to_lambda_config, unique_custom_handlers
+from stacks.constructs.simple_bot import SimpleBot
+from stacks.constructs.bot_props import BotProps
+from stacks.constructs.menu_bot.models import MenuLocale
+from stacks.utils.load_flow_content import load_flow_content
+from typing import List, Optional, Dict, Any
 
 def fulfillment_prompt(action: Dict[str, Any]) -> Optional[str]:
     """
