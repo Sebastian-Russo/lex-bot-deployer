@@ -1,4 +1,13 @@
-cat > .gitignore << 'EOF'
+# Python specific
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+.venv/
+venv/
+ENV/cat > .gitignore << 'EOF'
+
 # Python-specific
 __pycache__/
 *.py[cod]
