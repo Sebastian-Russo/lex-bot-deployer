@@ -5,7 +5,7 @@ from typing import Optional
 from ..bots.utterances.help_utterances import HELP_UTTERANCES
 
 # Saul Goodman Hotline
-TEST_NUMBER = '+15055034455'
+TEST_NUMBER = '+16462259369'
 
 class CityMenuBot(Construct):
     """

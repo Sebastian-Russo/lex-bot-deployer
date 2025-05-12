@@ -5,7 +5,7 @@ from typing import Optional
 
 # Saul Goodman Hotline
 # TODO: Change Me
-TEST_NUMBER = '+15055034455'
+TEST_NUMBER = '+16462259369'
 
 class NonEmergencyMenuBot(Construct):
     """
