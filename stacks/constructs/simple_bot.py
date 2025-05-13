@@ -201,11 +201,11 @@ class SimpleBot(Construct):
             self.version.node.add_dependency(engine_update)
             self.alias.node.add_dependency(engine_update)
 
-    def _map_locales(self, locales, nlu_confidence_threshold):
+    def _map_locales(self, locales, nlu_confidence_threshold: float):
         """Map SimpleLocale objects to the format expected by CfnBot"""
         return [self._format_locale(l, nlu_confidence_threshold) for l in locales]
 
-    def _format_locale(self, locale, nlu_confidence_threshold):
+    def _format_locale(self, locale: SimpleLocale, nlu_confidence_threshold: float):
         """Format a single locale for CfnBot"""
         # Get code hooks from locale using safe access
         code_hook = locale.get('code_hook', {})
@@ -219,7 +219,7 @@ class SimpleBot(Construct):
             "voiceSettings": {
                 "voiceId": locale['voice_id']
             },
-            "intents": locale['intents'],
+            "intents": self._format_intents(locale['intents']),
             "botLocaleSetting": {
                 "enabled": True,
                 "codeHookSpecification": {
@@ -230,6 +230,63 @@ class SimpleBot(Construct):
                 } if code_hook.get('lambda_') else None
             }
         }
+
+    def _format_intents(self, intents: List[SimpleIntent]):
+        """
+        Format a list of SimpleIntent objects into the structure expected by Lex CfnBot.
+        This matches the logic of the provided TypeScript reference.
+        """
+        formatted_intents = []
+
+        # Try to get code hook settings from self.locales if possible
+        # (Assume the current locale is being processed and code_hook is available as self.code_hook or similar)
+        # If not, default to False
+        dialog_code_hook = False
+        fulfillment_code_hook = False
+        code_hook = getattr(self, 'code_hook', None)
+        if code_hook:
+            dialog_code_hook = getattr(code_hook, 'dialog', False)
+            fulfillment_code_hook = getattr(code_hook, 'fulfillment', False)
+
+        for intent in intents:
+            # Prepare slot priorities if slots exist
+            slot_priorities = None
+            slots = intent.get("slots")
+            if slots:
+                slot_priorities = [
+                    {"slotName": slot.get("name"), "priority": idx + 1}
+                    for idx, slot in enumerate(slots)
+                ]
+
+            formatted = {
+                "name": intent.get("name"),
+                "dialogCodeHook": {"enabled": dialog_code_hook},
+                "fulfillmentCodeHook": {
+                    "enabled": fulfillment_code_hook,
+                    "postFulfillmentStatusSpecification": self._post_fulfillment_prompt(
+                        {"value": intent.get("fulfillment_prompt")} if intent.get("fulfillment_prompt") else None
+                    ),
+                },
+                "sampleUtterances": [{"utterance": u} for u in intent.get("utterances")],
+                "slotPriorities": slot_priorities,
+                "slots": self._transform_slots({"slots": slots}) if slots else [],
+                "intentConfirmationSetting": self._transform_intent_confirmation(
+                    {"message_groups": [{"message": intent.get("confirmation_prompt")}]} if intent.get("confirmation_prompt") else {}
+                ) if intent.get("confirmation_prompt") else None,
+            }
+            formatted_intents.append(formatted)
+
+        # Add fallback intent
+        fallback_intent = {
+            "name": "FallbackIntent",
+            "dialogCodeHook": {"enabled": dialog_code_hook},
+            "fulfillmentCodeHook": {"enabled": fulfillment_code_hook},
+            "parentIntentSignature": "AMAZON.FallbackIntent",
+        }
+        formatted_intents.append(fallback_intent)
+
+        return formatted_intents
+
 
     def _transform_slot_type(self, slot_type: dict) -> dict:
         """Transform slot type dictionary to Lex format"""
