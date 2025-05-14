@@ -10,7 +10,7 @@ from constructs import Construct
 # from .bots.agent_busy_bot import AgentBusyBot
 # from .bots.menu_language_bot import MenuLanguageBot
 # from .bots.office_closed_bot import OfficeClosedBot
-# from .bots.yes_no_bot import YesNoBot
+from .bots.yes_no_bot import YesNoBot
 from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
 # from .bots.city_menu_bot import CityMenuBot
 
@@ -53,15 +53,15 @@ class LexStack(Stack):
 
         # Create bots with throttled deployment
         bots = [
-            # YesNoBot(
-            #     self,
-            #     'YesNoBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket
-            # ),
+            YesNoBot(
+                self,
+                'YesNoBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket
+            ),
             # AgentBusyBot(
             #     self,
             #     'AgentBusyBot',
