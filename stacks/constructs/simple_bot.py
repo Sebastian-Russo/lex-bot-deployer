@@ -267,7 +267,7 @@ class SimpleBot(Construct):
                         {"value": intent.get("fulfillment_prompt")} if intent.get("fulfillment_prompt") else None
                     ),
                 },
-                "sampleUtterances": [{"utterance": u} for u in intent.get("utterances")],
+                "sampleUtterances": [{"utterance": u} for u in intent.get("utterances", [])],
                 "slotPriorities": slot_priorities,
                 "slots": self._transform_slots({"slots": slots}) if slots else [],
                 "intentConfirmationSetting": self._transform_intent_confirmation(
@@ -321,13 +321,50 @@ class SimpleBot(Construct):
             }
         } for slot in intent.get("slots", [])]
 
-    def _transform_intent_confirmation(self, prompt: dict) -> dict:
-        """Transform prompt dictionary to Lex format for intent confirmation"""
+    def _transform_intent_confirmation(self, prompt: Optional[str]) -> Optional[dict]:
+        """Transform a confirmation prompt string to the full AWS structure"""
+        if not prompt:
+            return None
+
+        # If prompt is a dictionary-like string, extract the actual message
+        if isinstance(prompt, str) and prompt.startswith('{') and 'message' in prompt:
+            try:
+                # Try to extract message from a dictionary-like string
+                import ast
+                prompt_dict = ast.literal_eval(prompt)
+                if isinstance(prompt_dict, dict) and 'message_groups' in prompt_dict:
+                    message_groups = prompt_dict.get('message_groups', [])
+                    if message_groups and isinstance(message_groups[0], dict):
+                        prompt = message_groups[0].get('message', prompt)
+            except:
+                # If parsing fails, use the original prompt
+                pass
+
         return {
-            "prompt_specification": self._transform_prompt(prompt),
-            "declination_response": {
-                "message_groups": self._transform_message_groups(prompt.get("declination_message_groups", [])),
-                "allow_interrupt": prompt.get("declination_allow_interrupt", True)
+            "promptSpecification": {
+                "maxRetries": 3,
+                "messageGroupsList": [
+                    {
+                        "message": {
+                            "plainTextMessage": {
+                                "value": str(prompt)  # Just the plain message
+                            }
+                        }
+                    }
+                ],
+                "allowInterrupt": True
+            },
+            "declinationResponse": {
+                "messageGroupsList": [
+                    {
+                        "message": {
+                            "plainTextMessage": {
+                                "value": "Ok, I'll need some more information then."
+                            }
+                        }
+                    }
+                ],
+                "allowInterrupt": True
             }
         }
 

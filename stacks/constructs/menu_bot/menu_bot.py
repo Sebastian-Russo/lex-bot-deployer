@@ -4,11 +4,11 @@ from constructs import Construct
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_connect as connect
-from stacks.constructs.menu_bot.lmbda.interface import convert_to_lambda_config, unique_custom_handlers
-from stacks.constructs.simple_bot import SimpleBot
-from stacks.constructs.bot_props import BotProps
-from stacks.constructs.menu_bot.models import MenuLocale
-from stacks.utils.load_flow_content import load_flow_content
+from .lmbda.interface import convert_to_lambda_config, unique_custom_handlers
+from ..simple_bot import SimpleBot
+from ..bot_props import BotProps
+from .models import MenuLocale
+from ...utils.load_flow_content import load_flow_content
 from typing import List, Optional, Dict, Any
 
 def fulfillment_prompt(action: Dict[str, Any]) -> Optional[str]:
@@ -16,8 +16,8 @@ def fulfillment_prompt(action: Dict[str, Any]) -> Optional[str]:
     Fulfillment prompt is played after the intent fulfillment code-hook completes,
     but before the caller is returned to Connect.
     """
-    if action.get('preTransferPrompt') and isinstance(action.get('preTransferPrompt'), str):
-        return action.get('preTransferPrompt')
+    if action.get('pre_transfer_prompt') and isinstance(action.get('pre_transfer_prompt'), str):
+        return action.get('pre_transfer_prompt')
     return None
 
 class MenuBotProps(BotProps):
@@ -107,17 +107,12 @@ class MenuBot(Construct):
                 "intents": [
                     {"name": "help", "utterances": locale["help"]["utterances"]},
                     {"name": "hangUp", "utterances": locale["hang_up"]["utterances"]},
-                    # Add the FallbackIntent explicitly
-                    {
-                        "name": "FallbackIntent",
-                        "description": "Default fallback intent",
-                        "parentIntentSignature": "AMAZON.FallbackIntent"
-                    },
+                    # Add intents from the menu
                     *[{
                         "name": key,
                         "utterances": value["utterances"],
-                        "confirmationPrompt": value.get("confirmation"),
-                        "fulfillmentPrompt": fulfillment_prompt(value["action"])
+                        "confirmation_prompt": value.get("confirmation"),
+                        "fulfillment_prompt": fulfillment_prompt(value["action"])
                     } for key, value in locale["menu"].items()]
                 ]
             } for locale in locales]
@@ -158,7 +153,7 @@ class MenuBot(Construct):
             )
 
             module = connect.CfnContactFlowModule(
-                scope, 'ConnectModule',
+                self, 'ConnectModule',
                 instance_arn=connect_instance_arn,
                 name=module_name,
                 description=f"Handles interactions with the {bot_name} Lex bot",
@@ -177,7 +172,7 @@ class MenuBot(Construct):
                 )
 
                 connect.CfnContactFlow(
-                    scope, 'ConnectFlow',
+                    self, 'ConnectFlow',
                     instance_arn=connect_instance_arn,
                     type='CONTACT_FLOW',
                     name=f"{module_name} Sample Flow",
