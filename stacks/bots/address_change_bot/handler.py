@@ -1,7 +1,10 @@
 import json
+import logging
 from typing import Dict, Any
-from ....utils.logger import logger
 from ....lambda_shared.lex_helper import LexHelper
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
 
 def handler(event: Dict[str, Any], context=None) -> Dict[str, Any]:
     """

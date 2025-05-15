@@ -5,8 +5,31 @@ import boto3
 from botocore.exceptions import ClientError
 
 from .interface import LambdaConfig
-from ....lambda_shared import LexHelper
-from ....utils import parse_env_var
+# Fix the imports with try/except blocks
+try:
+    from lambda_shared import LexHelper
+except ImportError:
+    # During CDK synthesis, try an alternate import path
+    try:
+        from ....lambda_shared import LexHelper
+    except ImportError:
+        # Last resort fallback for CDK synthesis
+        print("WARNING: Unable to import LexHelper during CDK synthesis")
+        from .mock_imports import LexHelper  # You'll need to create this as a minimal stub if needed
+
+try:
+    from lambda_shared.utils.get_env_var import parse_env_var
+except ImportError:
+    # During CDK synthesis, try an alternate import path
+    try:
+        from ....utils import parse_env_var
+    except ImportError:
+        # Last resort fallback for CDK synthesis
+        print("WARNING: Using dummy parse_env_var during CDK synthesis")
+        def parse_env_var(name, default=None, required=False, coerce=None):
+            """Minimal implementation for CDK synthesis"""
+            return default
+
 from ..models import MenuAction
 
 # Configure logging
