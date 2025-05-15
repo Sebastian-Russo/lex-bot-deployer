@@ -72,118 +72,61 @@ class AddressChangeBot(Construct):
                                 'Change address',
                                 'Address change',
                             ],
-                    "slots": [
-                        {
-                            "name": "houseNumber",
-                            "slotTypeName": "AMAZON.Number",
-                            "valueElicitationSetting": {
-                                "slotConstraint": "Required",
-                                "promptSpecification": {
-                                    "messageGroupsList": [
-                                        {
-                                            "message": {
-                                                "plainTextMessage": {
-                                                    "value": "What is the house or building?"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "maxRetries": 3
+                            "slots": [
+                                {
+                                    "name": "houseNumber",
+                                    "description": "House or building number",
+                                    "slot_type_name": "AMAZON.Number",
+                                    "elicitation_messages": ["What is the house or building?"],
+                                    "max_retries": 3,
+                                    "allow_interrupt": True,
+                                    "required": True
+                                },
+                                {
+                                    "name": "streetName",
+                                    "description": "Street name",
+                                    "slot_type_name": "AMAZON.AlphaNumeric",
+                                    "elicitation_messages": ["What is the street name?"],
+                                    "max_retries": 3,
+                                    "allow_interrupt": True,
+                                    "required": True
+                                },
+                                {
+                                    "name": "city",
+                                    "description": "City",
+                                    "slot_type_name": "AMAZON.City",
+                                    "elicitation_messages": ["What is the city?"],
+                                    "max_retries": 3,
+                                    "allow_interrupt": True,
+                                    "required": True
+                                },
+                                {
+                                    "name": "state",
+                                    "description": "State",
+                                    "slot_type_name": "AMAZON.State",
+                                    "elicitation_messages": ["What is the state?"],
+                                    "max_retries": 3,
+                                    "allow_interrupt": True,
+                                    "required": True
+                                },
+                                {
+                                    "name": "zipCode",
+                                    "description": "Zip code",
+                                    "slot_type_name": "AMAZON.Number",
+                                    "elicitation_messages": ["What is the zip code?"],
+                                    "max_retries": 3,
+                                    "allow_interrupt": True,
+                                    "required": True
                                 }
-                            }
+                            ]
                         },
                         {
-                            "name": "streetName",
-                            "slotTypeName": "AMAZON.AlphaNumeric",
-                            "valueElicitationSetting": {
-                                "slotConstraint": "Required",
-                                "promptSpecification": {
-                                    "messageGroupsList": [
-                                        {
-                                            "message": {
-                                                "plainTextMessage": {
-                                                    "value": "What is the street name?"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "maxRetries": 3
-                                }
-                            }
-                        },
-                        {
-                            "name": "city",
-                            "slotTypeName": "AMAZON.City",
-                            "valueElicitationSetting": {
-                                "slotConstraint": "Required",
-                                "promptSpecification": {
-                                    "messageGroupsList": [
-                                        {
-                                            "message": {
-                                                "plainTextMessage": {
-                                                    "value": "What is the city?"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "maxRetries": 3
-                                }
-                            }
-                        },
-                        {
-                            "name": "state",
-                            "slotTypeName": "AMAZON.State",
-                            "valueElicitationSetting": {
-                                "slotConstraint": "Required",
-                                "promptSpecification": {
-                                    "messageGroupsList": [
-                                        {
-                                            "message": {
-                                                "plainTextMessage": {
-                                                    "value": "What is the state?"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "maxRetries": 3
-                                }
-                            }
-                        },
-                        {
-                            "name": "zipCode",
-                            "slotTypeName": "AMAZON.Number",
-                            "valueElicitationSetting": {
-                                "slotConstraint": "Required",
-                                "promptSpecification": {
-                                    "messageGroupsList": [
-                                        {
-                                            "message": {
-                                                "plainTextMessage": {
-                                                    "value": "What is the zip code?"
-                                                }
-                                            }
-                                        }
-                                    ],
-                                    "maxRetries": 3
-                                }
-                            }}
-                        ]
-                    },
-
-                    {
-                        "name": "Agent",
-                        "utterances": ['Speak to an agent', 'Talk to a human', 'I need human help']
-                    },
-
-                    # Required fallback intent
-                    {
-                        "name": "FallbackIntent",
-                        "description": "Default intent when no other intent matches",
-                        "parentIntentSignature": "AMAZON.FallbackIntent",
-                        "utterances": []
-                    }
-                ]
-            }
+                            "name": "Agent",
+                            "utterances": ['Speak to an agent', 'Talk to a human', 'I need human help']
+                        }
+                        # The FallbackIntent will be added automatically by SimpleBot
+                    ]
+                }
         ]
     )
 

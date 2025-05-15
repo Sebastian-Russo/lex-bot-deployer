@@ -310,14 +310,26 @@ class SimpleBot(Construct):
         return [{
             "name": slot.get("name"),
             "description": slot.get("description"),
-            "slot_type_name": slot.get("slot_type"),
-            "value_elicitation_setting": {
-                "prompt_specification": self._transform_prompt(slot.get("prompt")),
-                "sample_utterances": [{"utterance": u} for u in slot.get("sample_utterances", [])],
-                "default_value_specification": self._transform_default_value(slot.get("default_value"))
+            "slotTypeName": slot.get("slot_type_name"),  # Match TypeScript input format
+            "valueElicitationSetting": {
+                "slotConstraint": "Required" if slot.get("required") else "Optional",
+                "promptSpecification": {
+                    "allowInterrupt": slot.get("allow_interrupt", True),
+                    "maxRetries": slot.get("max_retries", 2),
+                    "messageGroupsList": [
+                        {
+                            "message": {
+                                "plainTextMessage": {
+                                    "value": message
+                                }
+                            }
+                        } for message in slot.get("elicitation_messages", [])
+                    ]
+                },
+                "sampleUtterances": [{"utterance": u} for u in slot.get("sample_utterances", [])]
             },
-            "obfuscation_setting": {
-                "obfuscation_setting_type": "None"
+            "obfuscationSetting": {
+                "obfuscationSettingType": "None"
             }
         } for slot in intent.get("slots", [])]
 
@@ -352,23 +364,11 @@ class SimpleBot(Construct):
                         }
                     }
                 ],
-                "allowInterrupt": True
-            },
-            "declinationResponse": {
-                "messageGroupsList": [
-                    {
-                        "message": {
-                            "plainTextMessage": {
-                                "value": "Ok, I'll need some more information then."
-                            }
-                        }
-                    }
-                ],
-                "allowInterrupt": True
+                # "allowInterrupt": True
             }
         }
 
-    def _transform_prompt(self, prompt: dict) -> dict:
+    # def _transform_prompt(self, prompt: dict) -> dict:
         """Transform prompt dictionary to Lex format"""
         # This method signature was in the original but the implementation was missing
         # Adding a placeholder implementation to maintain compatibility
@@ -380,7 +380,7 @@ class SimpleBot(Construct):
             "allow_interrupt": prompt.get("allow_interrupt", True)
         }
 
-    def _transform_message_groups(self, message_groups: List[dict]) -> List[dict]:
+    # def _transform_message_groups(self, message_groups: List[dict]) -> List[dict]:
         """Transform message groups to Lex format"""
         # This method was called but not implemented in the original
         # Adding a placeholder implementation
@@ -394,6 +394,7 @@ class SimpleBot(Construct):
             }
         } for group in message_groups]
 
+    # TODO: messageGroupsList OR message_groups_list ?
     def _post_fulfillment_prompt(self, prompt: dict) -> dict:
         """Transform prompt dictionary to Lex format"""
         if not prompt:
@@ -411,7 +412,7 @@ class SimpleBot(Construct):
             }
         }
 
-    def _transform_default_value(self, default_value: dict) -> dict:
+    # def _transform_default_value(self, default_value: dict) -> dict:
         """Transform default value dictionary to Lex format"""
         if not default_value:
             return None
@@ -423,28 +424,39 @@ class SimpleBot(Construct):
     def bot_alias_locales(self):
         """Return bot alias locale settings"""
         return [{
-            "localeId": locale["locale_id"],
-            "botAliasLocaleSetting": {
-                "enabled": True
-            }
-        } for locale in self.locales]
+            "localeId": locale["locale_id"],  # camelCase output for AWS
+            "botAliasLocaleSetting": {  # camelCase output for AWS
+                "enabled": True,
+            # Add code hook if lambda is provided - matches TypeScript logic
+            "codeHookSpecification": {
+                "lambdaCodeHook": {
+                    "codeHookInterfaceVersion": "1.0",
+                    "lambdaArn": locale["code_hook"]["lambda_"].function_arn
+                }
+            } if locale.get("code_hook") and locale["code_hook"].get("lambda_") else None
+        }
+    } for locale in self.locales]
 
     def conversation_log_settings(self, alias_name: str):
         """Return conversation log settings"""
+        # Return None if neither log group nor audio bucket exists
+        if not self.log_group and not self.audio_bucket:
+            return None
+
         settings = {}
 
         # Add audio log settings if audio bucket exists
         if self.audio_bucket:
             settings["audioLogSettings"] = [
                 {
+                    "enabled": True,
                     "destination": {
                         "s3Bucket": {
-                            "bucketName": self.audio_bucket.bucket_name,
                             "s3BucketArn": self.audio_bucket.bucket_arn,
-                            "logPrefix": f"{alias_name}/audio-logs"
+                            "logPrefix": f"{self.name}/{alias_name}"
+                            # "kmsKeyArn": "todo"  # Commented out like in TS version
                         }
-                    },
-                    "enabled": True
+                    }
                 }
             ]
 
@@ -452,13 +464,13 @@ class SimpleBot(Construct):
         if self.log_group:
             settings["textLogSettings"] = [
                 {
+                    "enabled": True,
                     "destination": {
                         "cloudWatch": {
                             "cloudWatchLogGroupArn": self.log_group.log_group_arn,
-                            "logPrefix": f"{alias_name}/text-logs"
+                            "logPrefix": f"{self.name}/{alias_name}"
                         }
-                    },
-                    "enabled": True
+                    }
                 }
             ]
 
