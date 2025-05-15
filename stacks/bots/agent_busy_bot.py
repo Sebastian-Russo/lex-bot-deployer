@@ -20,40 +20,30 @@ class AgentBusyBot(SimpleBot):
         **kwargs
     ):
         # Create locales with Agent/Callback/Voicemail intents
-        locales = [
+        locales=[
             {
                 "locale_id": "en_US",
                 "voice_id": "Joanna",
                 "intents": [
                     {
                         "name": "Agent",
-                        "utterances": [
-                            'agent', 'representative', 'can I speak to an agent?',
-                            'help', 'can I talk to someone?'
-                        ],
+                        "utterances": ["agent", "representative", "can I speak to an agent?", "help", "can I talk to someone?"],
                     },
                     {
                         "name": "Callback",
-                        "utterances": [
-                            'request a callback', 'callback', 'I would like a call back',
-                            'Could you call me back?'
-                        ],
+                        "utterances": ["request a callback", "callback", "I would like a call back", "Could you call me back?"],
                     },
                     {
                         "name": "Voicemail",
                         "utterances": [
-                            'leave a voicemail', 'voicemail', 'leave a message',
-                            'message', 'I would like to leave a message'
+                            "leave a voicemail",
+                            "voicemail",
+                            "leave a message",
+                            "message",
+                            "I would like to leave a message",
                         ],
                     },
-                    # Required fallback intent
-                    {
-                        "name": "FallbackIntent",
-                        "description": "Default intent when no other intent matches",
-                        "parentIntentSignature": "AMAZON.FallbackIntent",
-                        "utterances": []
-                    }
-                ]
+                ],
             },
             {
                 "locale_id": "es_US",
@@ -62,35 +52,34 @@ class AgentBusyBot(SimpleBot):
                     {
                         "name": "Agent",
                         "utterances": [
-                            'agente', 'representante', 'puedo hablar con un agente?',
-                            'ayuda', 'puedo hablar con alguien?'
+                            "agente",
+                            "representante",
+                            "puedo hablar con un agente?",
+                            "ayuda",
+                            "puedo hablar con alguien?",
                         ],
                     },
                     {
                         "name": "Callback",
                         "utterances": [
-                            'solicitar una devolucion de llamada', 'llamar de vuelta',
-                            'me gustaria que me devolvieran la llamada',
-                            'podrias devolverme la llamada?'
+                            "solicitar una devolucion de llamada",
+                            "llamar de vuelta",
+                            "me gustaria que me devolvieran la llamada",
+                            "podrias devolverme la llamada?",
                         ],
                     },
                     {
                         "name": "Voicemail",
                         "utterances": [
-                            'dejar un mensaje de voz', 'mensaje de voz',
-                            'deja un mensaje', 'mensaje',
-                            'me gustaria dejar un mensaje'
+                            "dejar un mensaje de voz",
+                            "mensaje de voz",
+                            "deja un mensaje",
+                            "mensaje",
+                            "me gustaria dejar un mensaje",
                         ],
                     },
-                    # Required fallback intent
-                    {
-                        "name": "FallbackIntent",
-                        "description": "Intent por defecto cuando ningún otro intent coincide",
-                        "parentIntentSignature": "AMAZON.FallbackIntent",
-                        "utterances": []
-                    }
-                ]
-            }
+                ],
+            },
         ]
 
         # Ensure we have valid default values

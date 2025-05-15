@@ -54,75 +54,37 @@ class PinAuthBot(Construct):
                     "voice_id": "Joanna",
                     "code_hook": {
                         "lambda_": self.lambda_function,
-                        "fulfillment": True
+                        "fulfillment": True,
                     },
                     "intents": [
                         {
                             "name": "AccountNumber",
                             "utterances": [
-                                'My account number is {accountId}',
-                                'My account id is {accountId}',
-                                'It is {accountId}',
-                                '{accountId}'
+                                "My account number is {accountId}",
+                                "My account id is {accountId}",
+                                "It is {accountId}",
+                                "{accountId}",
                             ],
                             "slots": [
                                 {
                                     "name": "accountId",
-                                    "slotTypeName": "AMAZON.AlphaNumeric",
-                                    "description": "Account number slot",
-                                    "valueElicitationSetting": {
-                                        "slotConstraint": "Required",
-                                        "promptSpecification": {
-                                            "messageGroupsList": [
-                                                {
-                                                    "message": {
-                                                        "plainTextMessage": {
-                                                            "value": "May I have your Account Number?"
-                                                        }
-                                                    },
-                                                    "variations": [
-                                                        {
-                                                            "plainTextMessage": {
-                                                                "value": "What is your Account Number?"
-                                                            }
-                                                        }
-                                                    ]
-                                                }
-                                            ],
-                                            "maxRetries": 3
-                                        }
-                                    }
+                                    "slot_type_name": "AMAZON.AlphaNumeric",
+                                    "elicitation_messages": ["May I have your Account Number?", "What is your Account Number?"],
+                                    "max_retries": 3,
+                                    "allow_interrupt": True,
+                                    "required": True,
                                 },
                                 {
                                     "name": "accountPin",
-                                    "slotTypeName": "AMAZON.AlphaNumeric",
-                                    "description": "Account PIN slot",
-                                    "valueElicitationSetting": {
-                                        "slotConstraint": "Required",
-                                        "promptSpecification": {
-                                            "messageGroupsList": [
-                                                {
-                                                    "message": {
-                                                        "plainTextMessage": {
-                                                            "value": "Can you please provide me your PIN number?"
-                                                        }
-                                                    }
-                                                }
-                                            ],
-                                            "maxRetries": 3
-                                        }
-                                    }
-                                }
-                            ]
+                                    "slot_type_name": "AMAZON.AlphaNumeric",
+                                    "elicitation_messages": ["Can you please provide me your PIN number?"],
+                                    "max_retries": 3,
+                                    "allow_interrupt": True,
+                                    "required": True,
+                                },
+                            ],
                         },
-                        # Required fallback intent
-                        {
-                            "name": "FallbackIntent",
-                            "description": "Default intent when no other intent matches",
-                            "parentIntentSignature": "AMAZON.FallbackIntent",
-                            "utterances": []
-                        }
-                    ]
-                }
+                    ],
+                },
             ]
         )

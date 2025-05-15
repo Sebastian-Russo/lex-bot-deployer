@@ -22,7 +22,7 @@ class MenuLanguageBot(SimpleBot):
         **kwargs
     ):
         # Create locales with language selection intents
-        locales = [
+        locales=[
             {
                 "locale_id": "en_US",
                 "voice_id": "Joanna",
@@ -35,13 +35,7 @@ class MenuLanguageBot(SimpleBot):
                         "name": "English",
                         "utterances": ["english", "ingles"]
                     },
-                    {
-                        "name": "FallbackIntent",
-                        "description": "Default intent when no other intent matches",
-                        "parentIntentSignature": "AMAZON.FallbackIntent",
-                        "utterances": []
-                    }
-                ]
+                ],
             },
             {
                 "locale_id": "es_US",
@@ -55,14 +49,8 @@ class MenuLanguageBot(SimpleBot):
                         "name": "English",
                         "utterances": ["english", "ingles"]
                     },
-                    {
-                        "name": "FallbackIntent",
-                        "description": "Intent por defecto cuando ningún otro intent coincide",
-                        "parentIntentSignature": "AMAZON.FallbackIntent",
-                        "utterances": []
-                    }
-                ]
-            }
+                ],
+            },
         ]
 
         # Ensure we have valid default values

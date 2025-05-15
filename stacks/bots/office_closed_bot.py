@@ -20,60 +20,42 @@ class OfficeClosedBot(SimpleBot):
         **kwargs
     ):
         # Create locales with Emergency and Callback intents
-        locales = [
+
+        locales=[
             {
                 "locale_id": "en_US",
                 "voice_id": "Joanna",
                 "intents": [
                     {
-                "name": "Emergency",
-                "utterances": [
-                    "emergency", "urgent", "help", "I need help now", "this is an emergency"
-                ]
+                        "name": "Emergency",
+                        "utterances": ["emergency", "urgent", "help", "I need help now", "this is an emergency"],
+                    },
+                    {
+                        "name": "Callback",
+                        "utterances": ["request a callback", "callback", "I would like a call back", "Could you call me back?"],
+                    },
+                ],
             },
             {
-                "name": "Callback",
-                "utterances": [
-                    "request a callback", "callback", "I would like a call back",
-                    "Could you call me back?"
-                ]
+                "locale_id": "es_US",
+                "voice_id": "Lupe",
+                "intents": [
+                    {
+                        "name": "Emergency",
+                        "utterances": ["emergencia", "urgente", "ayuda", "necesito ayuda ahora", "esto es una emergencia"],
+                    },
+                    {
+                        "name": "Callback",
+                        "utterances": [
+                            "solicitar una devolucion de llamada",
+                            "llamar de vuelta",
+                            "me gustaria que me devolvieran la llamada",
+                            "podrias devolverme la llamada?",
+                        ],
+                    },
+                ],
             },
-            {
-                "name": "FallbackIntent",
-                "description": "Default intent when no other intent matches",
-                "parentIntentSignature": "AMAZON.FallbackIntent",
-                "utterances": []
-            }
         ]
-    },
-    {
-        "locale_id": "es_US",
-        "voice_id": "Lupe",
-        "intents": [
-            {
-                "name": "Emergency",
-                "utterances": [
-                    "emergencia", "urgente", "ayuda", "necesito ayuda ahora",
-                    "esto es una emergencia"
-                ]
-            },
-            {
-                "name": "Callback",
-                "utterances": [
-                    "solicitar una devolucion de llamada", "llamar de vuelta",
-                    "me gustaria que me devolvieran la llamada",
-                    "podrias devolverme la llamada?"
-                ]
-            },
-            {
-                "name": "FallbackIntent",
-                "description": "Intent por defecto cuando ningún otro intent coincide",
-                "parentIntentSignature": "AMAZON.FallbackIntent",
-                "utterances": []
-            }
-        ]
-    }
-]
 
         # Ensure we have valid default values
         if idle_session_ttl_in_seconds is None:
