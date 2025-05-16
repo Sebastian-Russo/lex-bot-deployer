@@ -333,13 +333,18 @@ class SimpleBot(Construct):
             }
         } for slot in intent.get("slots", [])]
 
-    def _transform_intent_confirmation(self, prompt: Optional[str]) -> Optional[dict]:
-        """Transform a confirmation prompt string to the full AWS structure"""
+    def _transform_intent_confirmation(self, prompt) -> Optional[dict]:
+        """Transform a confirmation prompt to the full AWS structure"""
         if not prompt:
             return None
 
-        # If prompt is a dictionary-like string, extract the actual message
-        if isinstance(prompt, str) and prompt.startswith('{') and 'message' in prompt:
+        # If prompt is already a dictionary, extract the message
+        if isinstance(prompt, dict) and 'message_groups' in prompt:
+            message_groups = prompt.get('message_groups', [])
+            if message_groups and isinstance(message_groups[0], dict):
+                prompt = message_groups[0].get('message', '')
+        # If prompt is a dictionary-like string, extract the message
+        elif isinstance(prompt, str) and prompt.startswith('{') and 'message' in prompt:
             try:
                 # Try to extract message from a dictionary-like string
                 import ast
@@ -368,32 +373,6 @@ class SimpleBot(Construct):
             }
         }
 
-    # def _transform_prompt(self, prompt: dict) -> dict:
-        """Transform prompt dictionary to Lex format"""
-        # This method signature was in the original but the implementation was missing
-        # Adding a placeholder implementation to maintain compatibility
-        if not prompt:
-            return None
-        return {
-            "message_groups": self._transform_message_groups(prompt.get("message_groups", [])),
-            "max_retries": prompt.get("max_retries", 2),
-            "allow_interrupt": prompt.get("allow_interrupt", True)
-        }
-
-    # def _transform_message_groups(self, message_groups: List[dict]) -> List[dict]:
-        """Transform message groups to Lex format"""
-        # This method was called but not implemented in the original
-        # Adding a placeholder implementation
-        if not message_groups:
-            return []
-        return [{
-            "message": {
-                "plain_text_message": {
-                    "value": group.get("message", "")
-                }
-            }
-        } for group in message_groups]
-
     # TODO: messageGroupsList OR message_groups_list ?
     def _post_fulfillment_prompt(self, prompt: dict) -> dict:
         """Transform prompt dictionary to Lex format"""
@@ -410,15 +389,6 @@ class SimpleBot(Construct):
                     }
                 }]
             }
-        }
-
-    # def _transform_default_value(self, default_value: dict) -> dict:
-        """Transform default value dictionary to Lex format"""
-        if not default_value:
-            return None
-        return {
-            "default_value_type": default_value.get("type", "Literal"),
-            "default_value": default_value.get("value", "")
         }
 
     def bot_alias_locales(self):
