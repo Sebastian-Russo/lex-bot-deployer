@@ -3,6 +3,8 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_lex as lex
 from aws_cdk.aws_lex import CfnBot, CfnBotAlias, CfnBotVersion
+from .lex_role import LexRoleProps
+from aws_cdk import CfnTag
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
 from aws_cdk import Stack
@@ -113,7 +115,9 @@ class SimpleBot(Construct):
         # Create or use provided role
         self.role = self.role or LexRole(
             self, 'Role',
-            lex_log_group_name=self.log_group.log_group_name if self.log_group else None
+            props=LexRoleProps(
+                lex_log_group_name=self.log_group.log_group_name if self.log_group else None
+            )
         )
 
         # Create bot
@@ -129,7 +133,14 @@ class SimpleBot(Construct):
             test_bot_alias_settings={
                 "botAliasLocaleSettings": self.bot_alias_locales(),
                 "conversationLogSettings": self.conversation_log_settings('TestBotAlias')
-            }
+            },
+            # Add the required tag for Connect permissions
+            bot_tags=[
+                CfnTag(
+                    key="AmazonConnectEnabled",
+                    value="True"
+                )
+            ]
         )
 
         # Create version with hash to ensure updates
@@ -166,6 +177,7 @@ class SimpleBot(Construct):
 
         # Associate with connect if provided
         if self.connect_instance_arn:
+            # This adds permissions for Connect to invoke Lambda functions
             for locale in self.locales:
                 if locale.get('code_hook') and locale['code_hook'].get('lambda_'):
                     locale['code_hook']['lambda_'].add_permission(
