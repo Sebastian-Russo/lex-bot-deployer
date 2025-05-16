@@ -156,7 +156,7 @@ class CityMenuBot(Construct):
                         "CITY_HALL": {
                             "utterances": [
                                 "Me gustaría hablar con alguien en el ayuntamiento.",
-                                "Conéctame con la oficina del alcalde",
+                                "Conéctame con el ayuntamiento",
                                 "Oficina de los comisionados de la ciudad",
                             ],
                             "confirmation": "¿Entiendo que necesitas hablar con el ayuntamiento, ¿es correcto?",
