@@ -1,7 +1,7 @@
 import json
 import logging
 from typing import Dict, Any
-from ....lambda_shared.lex_helper import LexHelper
+from ...lmbda.shared.lex_helper import LexHelper
 
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -25,13 +25,8 @@ def handler(event: Dict[str, Any], context=None) -> Dict[str, Any]:
     zip_code = helper.slot_value('zipCode')
 
     # TODO: Validate address & Update DB?
-    logger.debug('result', {
-        'houseNumber': house_number,
-        'streetName': street_name,
-        'city': city,
-        'state': state,
-        'zipCode': zip_code
-    })
+    logger.debug('Address result: house_number=%s, street_name=%s, city=%s, state=%s, zip_code=%s',
+        house_number, street_name, city, state, zip_code)
 
     # Since we can't use await in Python synchronously, we'll simulate with a simple value
     is_success = True  # await Promise.resolve(true) in TypeScript

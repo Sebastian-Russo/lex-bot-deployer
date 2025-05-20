@@ -1,7 +1,7 @@
 import json
 from typing import Dict, Any
-from ....lambda_shared.lex_helper import LexHelper
-from ....utils.logger import logger
+from lex_project_template_py.lambda_shared.lex_helper import LexHelper
+from lex_project_template_py.utils.logger import logger
 
 def handler(event: Dict[str, Any], context=None) -> Dict[str, Any]:
     """

@@ -4,7 +4,7 @@ from constructs import Construct
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_connect as connect
-from ...lmbda.l2_constructs.menu_bot import convert_to_lambda_config, unique_custom_handlers
+from .lmbda.routing.interface import convert_to_lambda_config, unique_custom_handlers
 from ..simple_bot import SimpleBot
 from ..bot_props import BotProps
 from .models import MenuLocale
@@ -63,14 +63,24 @@ class MenuBot(Construct):
         bot_name = f"{prefix}-{id}"
         config = convert_to_lambda_config(locales)
 
-        # Create Lex handler Lambda
+        # Add this in your MenuBot class (before creating the Lambda functions)
+        # This creates a shared layer with common dependencies
+        shared_layer = lambda_.LayerVersion(
+            self, 'SharedLayer',
+            code=lambda_.Code.from_asset(os.path.join(os.path.dirname(__file__), 'lmbda', 'shared')),
+            compatible_runtimes=[lambda_.Runtime.PYTHON_3_9],
+            description='Shared utilities and helper functions'
+        )
+
+        # Create Lex handler
         self.lex_handler = PythonFunction(
             self, 'LexHandler',
             function_name=f"{bot_name}-handler",
-            entry=os.path.join(os.path.dirname(__file__), '..', '..', 'lmbda', 'l2_constructs', 'menu_bot', 'routing'),
+            entry=os.path.join(os.path.dirname(__file__), 'lmbda', 'routing'),
             index='lex_handler.py',
             handler='handler',
             runtime=lambda_.Runtime.PYTHON_3_9,
+            layers=[shared_layer],
             environment={
                 'LOGGING_LEVEL': logging_level,
                 'CONFIG': json.dumps(config)
@@ -126,10 +136,11 @@ class MenuBot(Construct):
         connect_handler = PythonFunction(
             self, 'ConnectHandler',
             function_name=f"{bot_name}-info",
-            entry=os.path.join(os.path.dirname(__file__), '..', '..', 'lmbda', 'l2_constructs', 'menu_bot', 'get_greeting'),
+            entry=os.path.join(os.path.dirname(__file__), 'lmbda', 'get_greeting'),
             index='connect_handler.py',
             handler='handler',
             runtime=lambda_.Runtime.PYTHON_3_9,
+            layers=[shared_layer],
             environment={
                 'LOGGING_LEVEL': logging_level,
                 'CONFIG': json.dumps(config)

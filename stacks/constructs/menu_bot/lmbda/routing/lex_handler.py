@@ -4,14 +4,9 @@ from typing import Dict, Optional, Any, Union, Literal
 import boto3
 from botocore.exceptions import ClientError
 
-# Update imports to proper relative paths
-from stacks.lmbda.l2_constructs.menu_bot.routing.interface import LambdaConfig
-# Import LexHelper from shared utils
-from ....shared.lex_helper import LexHelper
-# Import parse_env_var from the right place
-from ....shared.utils.get_env_var import parse_env_var
-# Import any needed models
-from stacks.constructs.menu_bot.models import MenuAction
+from interface import LambdaConfig  # Local file import
+from shared_utils.lex_helper import LexHelper  # From layer
+from shared_utils.utils.get_env_var import parse_env_var  # From layer
 
 # Configure logging
 logger = logging.getLogger(__name__)
