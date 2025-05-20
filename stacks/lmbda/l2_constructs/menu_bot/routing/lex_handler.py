@@ -4,33 +4,14 @@ from typing import Dict, Optional, Any, Union, Literal
 import boto3
 from botocore.exceptions import ClientError
 
-from .interface import LambdaConfig
-# Fix the imports with try/except blocks
-try:
-    from lambda_shared import LexHelper
-except ImportError:
-    # During CDK synthesis, try an alternate import path
-    try:
-        from ....lambda_shared import LexHelper
-    except ImportError:
-        # Last resort fallback for CDK synthesis
-        print("WARNING: Unable to import LexHelper during CDK synthesis")
-        from .mock_imports import LexHelper  # You'll need to create this as a minimal stub if needed
-
-try:
-    from lambda_shared.utils.get_env_var import parse_env_var
-except ImportError:
-    # During CDK synthesis, try an alternate import path
-    try:
-        from ....utils import parse_env_var
-    except ImportError:
-        # Last resort fallback for CDK synthesis
-        print("WARNING: Using dummy parse_env_var during CDK synthesis")
-        def parse_env_var(name, default=None, required=False, coerce=None):
-            """Minimal implementation for CDK synthesis"""
-            return default
-
-from ..models import MenuAction
+# Update imports to proper relative paths
+from stacks.lmbda.l2_constructs.menu_bot.routing.interface import LambdaConfig
+# Import LexHelper from shared utils
+from ....shared.lex_helper import LexHelper
+# Import parse_env_var from the right place
+from ....shared.utils.get_env_var import parse_env_var
+# Import any needed models
+from stacks.constructs.menu_bot.models import MenuAction
 
 # Configure logging
 logger = logging.getLogger(__name__)

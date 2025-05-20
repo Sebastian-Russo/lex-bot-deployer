@@ -15,7 +15,7 @@ os.environ['CONFIG'] = json.dumps({
 
 # Import after setting environment variable
 # Adjust the import path based on your project structure
-from stacks.constructs.menu_bot.lmbda.connect_handler import ConnectHandler, ConnectEvent
+from stacks.lmbda.l2_constructs.menu_bot.connect_handler import ConnectHandler, ConnectEvent
 
 def test_should_get_greeting():
     # Create the system under test (sut)

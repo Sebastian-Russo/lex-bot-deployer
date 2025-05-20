@@ -1,5 +1,5 @@
 from typing import Dict, List, Union, TypedDict
-from ..models import MenuLocale, MenuAction
+from stacks.constructs.menu_bot.models import MenuLocale, MenuAction
 
 # Type hint for the Lambda config
 class LocaleConfig(TypedDict, total=False):

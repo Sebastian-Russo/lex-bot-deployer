@@ -4,12 +4,14 @@ from constructs import Construct
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_connect as connect
-from .lmbda.interface import convert_to_lambda_config, unique_custom_handlers
+from ...lmbda.l2_constructs.menu_bot import convert_to_lambda_config, unique_custom_handlers
 from ..simple_bot import SimpleBot
 from ..bot_props import BotProps
 from .models import MenuLocale
 from ...utils.load_flow_content import load_flow_content
 from typing import List, Optional, Dict, Any
+from aws_cdk.aws_lambda_python_alpha import PythonFunction
+
 
 def fulfillment_prompt(action: Dict[str, Any]) -> Optional[str]:
     """
@@ -39,6 +41,7 @@ class MenuBotProps(BotProps):
         self.include_module = include_module
         self.include_sample_flow = include_sample_flow
 
+
 class MenuBot(Construct):
     """
     Creates a Lex bot with a menu structure for handling basic customer interactions
@@ -61,12 +64,13 @@ class MenuBot(Construct):
         config = convert_to_lambda_config(locales)
 
         # Create Lex handler Lambda
-        self.lex_handler = lambda_.Function(
+        self.lex_handler = PythonFunction(
             self, 'LexHandler',
             function_name=f"{bot_name}-handler",
+            entry=os.path.join(os.path.dirname(__file__), '..', '..', 'lmbda', 'l2_constructs', 'menu_bot', 'routing'),
+            index='lex_handler.py',
+            handler='handler',
             runtime=lambda_.Runtime.PYTHON_3_9,
-            handler='lex_handler.handler',
-            code=lambda_.Code.from_asset(os.path.join(os.path.dirname(__file__), 'lmbda')),
             environment={
                 'LOGGING_LEVEL': logging_level,
                 'CONFIG': json.dumps(config)
@@ -119,12 +123,13 @@ class MenuBot(Construct):
         )
 
         # Create Connect handler Lambda
-        connect_handler = lambda_.Function(
+        connect_handler = PythonFunction(
             self, 'ConnectHandler',
             function_name=f"{bot_name}-info",
+            entry=os.path.join(os.path.dirname(__file__), '..', '..', 'lmbda', 'l2_constructs', 'menu_bot', 'get_greeting'),
+            index='connect_handler.py',
+            handler='handler',
             runtime=lambda_.Runtime.PYTHON_3_9,
-            handler='connect_handler.handler',
-            code=lambda_.Code.from_asset(os.path.join(os.path.dirname(__file__), 'lmbda')),
             environment={
                 'LOGGING_LEVEL': logging_level,
                 'CONFIG': json.dumps(config)
