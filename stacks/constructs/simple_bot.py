@@ -44,13 +44,13 @@ class SimpleSlot:
                     allow_interrupt=self.allow_interrupt,
                     max_retries=self.max_retries,
                     message_groups_list=[
-                        {
-                            "message": {
-                                "plain_text_message": {
-                                    "value": message
-                                }
-                            }
-                        } for message in self.elicitation_messages
+                        CfnBot.MessageGroupProperty(
+                            message=CfnBot.MessageProperty(
+                                plain_text_message=CfnBot.PlainTextMessageProperty(
+                                    value=message                                
+                                )
+                            )
+                        ) for message in self.elicitation_messages
                     ]
                 )
             )
@@ -84,7 +84,7 @@ class SimpleIntent:
         if self.slots:
             slot_priorities = [
                 {
-                    "slot_name": slot.name,
+                    "slotName": slot.name,
                     "priority": idx + 1
                 }
                 for idx, slot in enumerate(self.slots)
@@ -180,13 +180,31 @@ class SimpleLocale:
             intents=intents,
         )
 
+    def to_cdk_bot_locale_setting(self) -> CfnBot.BotAliasLocaleSettingsItemProperty:
+        code_hook_specification = None
+        if(self.code_hook is not None):
+            code_hook_specification = CfnBot.CodeHookSpecificationProperty(
+                lambda_code_hook={
+                    'codeHookInterfaceVersion': '1.0',
+                    'lambdaArn': self.code_hook.lambda_.function_arn
+                }
+            )
+
+        return CfnBot.BotAliasLocaleSettingsItemProperty(
+            bot_alias_locale_setting=CfnBot.BotAliasLocaleSettingsProperty(
+                enabled=True,
+                code_hook_specification=code_hook_specification
+            ),
+            locale_id=self.locale_id
+        )
+
     def to_cdk_bot_alias_locale_setting(self) -> CfnBotAlias.BotAliasLocaleSettingsItemProperty:
         code_hook_specification = None
         if(self.code_hook is not None):
             code_hook_specification = CfnBotAlias.CodeHookSpecificationProperty(
                 lambda_code_hook={
-                    'code_hook_interface_version': '1.0',
-                    'lambda_arn': self.code_hook.lambda_.function_arn
+                    'codeHookInterfaceVersion': '1.0',
+                    'lambdaArn': self.code_hook.lambda_.function_arn
                 }
             )
 
@@ -238,8 +256,6 @@ class SimpleBot(Construct):
             )
         )
 
-        bot_alias_locale_settings = [locale.to_cdk_bot_alias_locale_setting() for locale in props.locales]
-
         # Create bot
         self.bot = CfnBot(
             self, 'Bot',
@@ -250,10 +266,10 @@ class SimpleBot(Construct):
             data_privacy={"ChildDirected": False},
             bot_locales=[l.to_cdk_locale(props.nlu_confidence_threshold) for l in props.locales],
             auto_build_bot_locales=False,  # Turned off to prevent build issues
-            test_bot_alias_settings={
-                "bot_alias_locale_settings": bot_alias_locale_settings,
-                "conversation_log_settings": self.conversation_log_settings('TestBotAlias')
-            },
+            test_bot_alias_settings=CfnBot.TestBotAliasSettingsProperty(
+                bot_alias_locale_settings=[locale.to_cdk_bot_locale_setting() for locale in props.locales],
+                # conversation_log_settings=self.conversation_log_settings('TestBotAlias')
+            ),
             # Add the required tag for Connect permissions
             bot_tags=[
                 CfnTag(
@@ -280,7 +296,7 @@ class SimpleBot(Construct):
             self, 'Alias',
             bot_alias_name='live',
             bot_id=self.bot.attr_id,
-            bot_alias_locale_settings=bot_alias_locale_settings,
+            bot_alias_locale_settings=[locale.to_cdk_bot_alias_locale_setting() for locale in props.locales],
             bot_version=self.version.attr_bot_version,
             conversation_log_settings=self.conversation_log_settings('live')
         )
@@ -293,6 +309,12 @@ class SimpleBot(Construct):
                     principal=iam.ServicePrincipal("lexv2.amazonaws.com"),
                     action="lambda:InvokeFunction",
                     source_arn=f"arn:aws:lex:{self.region}:{self.account}:bot/{self.bot.attr_id}/*/*"
+                )
+                locale.code_hook.lambda_.add_permission(
+                    f"lex-lambda-invoke-{locale.locale_id}-alias",
+                    principal=iam.ServicePrincipal("lexv2.amazonaws.com"),
+                    action="lambda:InvokeFunction",
+                    source_arn=f"arn:aws:lex:{self.region}:{self.account}:bot-alias/{self.bot.attr_id}/*"
                 )
 
         # Associate with connect if provided

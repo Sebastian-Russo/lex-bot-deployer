@@ -6,7 +6,7 @@ from constructs import Construct
 
 # Import bot implementations
 # from .bots.pin_auth_bot import PinAuthBot
-# from .bots.address_change_bot import AddressChangeBot
+from .bots.address_change_bot import AddressChangeBot
 from .bots.agent_busy_bot import AgentBusyBot
 # from .bots.menu_language_bot import MenuLanguageBot
 # from .bots.office_closed_bot import OfficeClosedBot
@@ -53,33 +53,33 @@ class LexStack(Stack):
 
         # Create bots with throttled deployment
         bots = [
-            YesNoBot(
-                self,
-                'YesNoBot',
-                prefix=prefix,
-                connect_instance_arn=connect_instance_arn,
-                role=role,
-                log_group=log_group,
-                audio_bucket=audio_bucket
-            ),
-            AgentBusyBot(
-                self,
-                'AgentBusyBot',
-                prefix=prefix,
-                connect_instance_arn=connect_instance_arn,
-                role=role,
-                log_group=log_group,
-                audio_bucket=audio_bucket
-            ),
-            # AddressChangeBot(
+            # YesNoBot(
             #     self,
-            #     'AddressChangeBot',
+            #     'YesNoBot',
             #     prefix=prefix,
             #     connect_instance_arn=connect_instance_arn,
             #     role=role,
             #     log_group=log_group,
             #     audio_bucket=audio_bucket
             # ),
+            # AgentBusyBot(
+            #     self,
+            #     'AgentBusyBot',
+            #     prefix=prefix,
+            #     connect_instance_arn=connect_instance_arn,
+            #     role=role,
+            #     log_group=log_group,
+            #     audio_bucket=audio_bucket
+            # ),
+            AddressChangeBot(
+                self,
+                'AddressChangeBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket
+            ),
             # PinAuthBot(
             #     self,
             #     'PinAuthBot',
