@@ -221,6 +221,8 @@ class SimpleBot(Construct):
         # Only pass scope and id to the Construct base class
         super().__init__(scope, id)
 
+        version_id = f'Version{hash_code(self)}'
+
         # Store parameters as instance variables
         self.name = name
         self.description = description
@@ -253,12 +255,12 @@ class SimpleBot(Construct):
         # Create bot
         self.bot = CfnBot(
             self, 'Bot',
-            name=name[:50],  # Trim to 50 characters
-            description=description,
-            idle_session_ttl_in_seconds=idle_session_ttl_in_seconds,
+            name=self.name[:50],  # Trim to 50 characters
+            description=self.description,
+            idle_session_ttl_in_seconds=self.idle_session_ttl_in_seconds,
             role_arn=self.role.role_arn,
             data_privacy={"ChildDirected": False},
-            bot_locales=self._map_locales(locales, nlu_confidence_threshold),
+            bot_locales=[l.to_cdk_locale(self.nlu_confidence_threshold) for l in self.locales],
             auto_build_bot_locales=False,  # Turned off to prevent build issues
             test_bot_alias_settings={
                 "bot_alias_locale_settings": self.to_bot_alias_locale_settings(),
@@ -275,14 +277,14 @@ class SimpleBot(Construct):
 
         # Create version with hash to ensure updates
         self.version = CfnBotVersion(
-            self, f"Version{hash_code({'name': self.name, 'locales': self.locales})}",
+            self, version_id,
             bot_id=self.bot.attr_id,
-            bot_version_locale_specification=[{
-                "localeId": locale["locale_id"],
-                "botVersionLocaleDetails": {
-                    "sourceBotVersion": "DRAFT"
-                }
-            } for locale in self.locales]
+            bot_version_locale_specification=[CfnBotVersion.BotVersionLocaleSpecificationProperty(
+                locale_id=locale.locale_id,
+                bot_version_locale_details=CfnBotVersion.BotVersionLocaleDetailsProperty(
+                    source_bot_version="DRAFT"
+                )
+            ) for locale in self.locales]
         )
 
         # Create alias
@@ -297,9 +299,9 @@ class SimpleBot(Construct):
 
         # Add permissions for lambdas
         for locale in self.locales:
-            if locale.get('code_hook') and locale['code_hook'].get('lambda_'):
-                locale['code_hook']['lambda_'].add_permission(
-                    f"lex-lambda-invoke-{locale['locale_id']}",
+            if locale.code_hook and locale.code_hook.lambda_:
+                locale.code_hook.lambda_.add_permission(
+                    f"lex-lambda-invoke-{locale.locale_id}",
                     principal=iam.ServicePrincipal("lexv2.amazonaws.com"),
                     action="lambda:InvokeFunction",
                     source_arn=f"arn:aws:lex:{self.region}:{self.account}:bot/{self.bot.attr_id}/*/*"
@@ -309,9 +311,9 @@ class SimpleBot(Construct):
         if self.connect_instance_arn:
             # This adds permissions for Connect to invoke Lambda functions
             for locale in self.locales:
-                if locale.get('code_hook') and locale['code_hook'].get('lambda_'):
-                    locale['code_hook']['lambda_'].add_permission(
-                        f"connect-lambda-invoke-{locale['locale_id']}",
+                if locale.code_hook and locale.code_hook.lambda_:
+                    locale.code_hook.lambda_.add_permission(
+                        f"connect-lambda-invoke-{locale.locale_id}",
                         principal=iam.ServicePrincipal("connect.amazonaws.com"),
                         action="lambda:InvokeFunction",
                         source_arn=f"arn:aws:connect:{self.region}:{self.account}:instance/*"
@@ -324,16 +326,16 @@ class SimpleBot(Construct):
             )
 
         # Update neural engine for locales that need it
-        neural_locales = [l for l in self.locales if (l.get('engine') or LexDefaults.engine) == 'neural']
+        neural_locales = [l for l in self.locales if (l.engine or LexDefaults.engine) == 'neural']
         for l in neural_locales:
-            id = f"{l['locale_id']}Neural"
+            id = f"{l.locale_id}Neural"
             # Create UpdateNeuralEngineProps instance
             props = UpdateNeuralEngineProps(
                 bot_id=self.bot.attr_id,
-                description=l.get('description'),
-                locale_id=l['locale_id'],
+                description=l.description,
+                locale_id=l.locale_id,
                 nlu_intent_confidence_threshold=self.nlu_confidence_threshold,
-                voice_id=l['voice_id']
+                voice_id=l.voice_id
             )
 
             # Pass the props object
@@ -342,10 +344,6 @@ class SimpleBot(Construct):
             )
             self.version.node.add_dependency(engine_update)
             self.alias.node.add_dependency(engine_update)
-
-    def _map_locales(self, locales: List[SimpleLocale], nlu_confidence_threshold: float) -> List[CfnBot.BotLocaleProperty]:
-        """Map SimpleLocale objects to the format expected by CfnBot"""
-        return [l.to_cdk_locale(nlu_confidence_threshold) for l in locales]
 
     def to_bot_alias_locale_settings(self) -> List[CfnBotAlias.BotAliasLocaleSettingsItemProperty]:
         return [locale.to_cdk_bot_alias_locale_setting() for locale in self.locales]

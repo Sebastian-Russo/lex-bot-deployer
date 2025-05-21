@@ -40,7 +40,9 @@ class LexStack(Stack):
         role = LexRole(self, 'LexRole')
 
         # Create Audio Bucket
-        audio_bucket = s3.Bucket(self, 'AudioBucket')
+        audio_bucket = s3.Bucket(self, 'AudioBucket',
+            removal_policy=RemovalPolicy.DESTROY
+        )
         audio_bucket.grant_write(role)
 
         # Create Log Group
