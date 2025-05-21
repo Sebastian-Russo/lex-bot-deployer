@@ -84,6 +84,41 @@ class SimpleIntent:
             intent_confirmation_setting= self._transform_intent_confirmation(self.confirmation_prompt),
         )
 
+    def _transform_intent_confirmation(self, prompt: str) -> Optional[CfnBot.IntentConfirmationSettingProperty]:
+        if not prompt:
+            return None
+
+        return CfnBot.IntentConfirmationSettingProperty(
+            prompt_specification=CfnBot.PromptSpecificationProperty(
+                max_retries=3,
+                message_groups_list=[
+                    CfnBot.MessageGroupProperty({
+                        "message": {
+                            "plain_text_message": {
+                                "value": prompt
+                            }
+                        }
+                    })
+                ]
+            )
+        )    
+
+    def _post_fulfillment_prompt(self, prompt: str) -> Optional[CfnBot.PostFulfillmentStatusSpecificationProperty]:
+        if not prompt:
+            return None
+
+        return CfnBot.PostFulfillmentStatusSpecificationProperty(
+            success_response=CfnBot.PostFulfillmentStatusSpecificationProperty.SuccessResponseProperty(
+                message_groups_list=[{
+                    "message": {
+                        "plain_text_message": {
+                            "value": prompt
+                        }
+                    }
+                }]  
+            )
+        )
+
 @dataclass
 class SimpleLocale:
     locale_id: str
@@ -314,42 +349,7 @@ class SimpleBot(Construct):
             }
         ) for slot in intent.slots]
 
-    def _transform_intent_confirmation(self, prompt: str) -> CfnBot.IntentConfirmationSettingProperty:
-        if not prompt:
-            return None
 
-        return CfnBot.IntentConfirmationSettingProperty(
-            prompt_specification=CfnBot.PromptSpecificationProperty(
-                max_retries=3,
-                message_groups_list=[
-                    CfnBot.MessageGroupProperty({
-                        "message": {
-                            "plain_text_message": {
-                                "value": prompt
-                            }
-                        }
-                    })
-                ]
-            )
-        )    
-
-    # TODO: messageGroupsList OR message_groups_list ?
-    def _post_fulfillment_prompt(self, prompt: dict) -> dict:
-        """Transform prompt dictionary to Lex format"""
-        if not prompt:
-            return None
-
-        return {
-            "success_response": {
-                "message_groups_list": [{
-                    "message": {
-                        "plain_text_message": {
-                            "value": prompt.get("value")
-                        }
-                    }
-                }]
-            }
-        }
 
     def bot_alias_locales(self):
         """Return bot alias locale settings"""
