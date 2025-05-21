@@ -18,6 +18,11 @@ from ..utils.hash_code import hash_code
 from dataclasses import dataclass
 from typing import List, Optional
 
+@dataclass
+class CodeHook:
+    lambda_: lambda_.IFunction
+    dialog: bool = False
+    fulfillment: bool = False
 
 @dataclass
 class SimpleSlot:
@@ -52,13 +57,32 @@ class SimpleIntent:
     confirmation_prompt: Optional[str] = None
     fulfillment_prompt: Optional[str] = None
 
+    def to_cdk(self, dialog_code_hook: bool, fulfillment_code_hook: bool) -> CfnBot.IntentProperty:
+        # Prepare slot priorities if slots exist
+        slot_priorities: List[CfnBot.SlotPriorityProperty] = None
+        if self.slots:
+            slot_priorities = [
+                {
+                    "slot_name": slot.name,
+                    "priority": idx + 1
+                }
+                for idx, slot in enumerate(self.slots)
+            ]
 
-@dataclass
-class CodeHook:
-    lambda_: lambda_.IFunction
-    dialog: bool = False
-    fulfillment: bool = False
-
+        return CfnBot.IntentProperty(
+            name=self.name,
+            dialog_code_hook={
+                "enabled": dialog_code_hook,
+            },
+            fulfillment_code_hook= {
+                "enabled": fulfillment_code_hook,
+                "fulfillment_updates_specification": self._post_fulfillment_prompt(self.fulfillment_prompt),
+            },
+            sample_utterances= [{"utterance": u} for u in self.utterances],
+            slot_priorities= slot_priorities,
+            slots = self._transform_slots(self.slots),
+            intent_confirmation_setting= self._transform_intent_confirmation(self.confirmation_prompt),
+        )
 
 @dataclass
 class SimpleLocale:
@@ -71,6 +95,20 @@ class SimpleLocale:
     code_hook: Optional[CodeHook] = None
 
     def to_cdk(self, nlu_confidence_threshold: float) -> CfnBot.BotLocaleProperty:
+        dialog_code_hook = False
+        fulfillment_code_hook = False
+        if self.code_hook:
+            dialog_code_hook = self.code_hook.dialog
+            fulfillment_code_hook = self.code_hook.fulfillment
+
+        intents = [intent.to_cdk(dialog_code_hook, fulfillment_code_hook) for intent in self.intents]
+        intents.append(CfnBot.IntentProperty(
+            name= 'FallbackIntent',
+            dialog_code_hook={ "enabled": dialog_code_hook },
+            fulfillment_code_hook={ "enabled": fulfillment_code_hook },
+            parent_intent_signature= 'AMAZON.FallbackIntent',
+        ))
+
         return CfnBot.BotLocaleProperty(
             locale_id=self.locale_id,
             nlu_confidence_threshold=nlu_confidence_threshold,
@@ -78,7 +116,7 @@ class SimpleLocale:
                 "voiceId": self.voice_id
             },
             # TODO: Implement Slot Types
-            intents=self._format_intents(self.intents),
+            intents=intents,
         )
 
 
@@ -229,84 +267,7 @@ class SimpleBot(Construct):
         """Map SimpleLocale objects to the format expected by CfnBot"""
         return [l.to_cdk(nlu_confidence_threshold) for l in locales]
 
-    # EDIT: Updated function signature to accept code_hook parameter
-    def _format_intents(self, intents: List[SimpleIntent], code_hook: Optional[CodeHook] = None) -> List[CfnBot.IntentProperty]:
-        """
-        Format a list of SimpleIntent objects into the structure expected by Lex CfnBot.
-        This matches the logic of the provided TypeScript reference.
-        """
-        formatted_intents: List[CfnBot.IntentProperty] = []
-
-        dialog_code_hook = False
-        fulfillment_code_hook = False
-        lambda_arn = None
-        if code_hook:
-            dialog_code_hook = code_hook.dialog
-            fulfillment_code_hook = code_hook.fulfillment
-            lambda_arn = code_hook.lambda_.function_arn
-                
-        for intent in intents:
-            # Prepare slot priorities if slots exist
-            slot_priorities = None
-            slots = intent.slots
-            if slots:
-                slot_priorities = [
-                    {"slotName": slot.get("name"), "priority": idx + 1}
-                    for idx, slot in enumerate(slots)
-                ]
-
-            formatted: CfnBot.IntentProperty = CfnBot.IntentProperty(
-                name=intent.name,
-                # EDIT: Add lambda ARN to dialog code hook
-                dialog_code_hook={
-                    "enabled": dialog_code_hook,
-                    "lambdaCodeHook": {
-                        "lambdaARN": lambda_arn,
-                        "codeHookInterfaceVersion": "1.0"
-                    } if dialog_code_hook and lambda_arn else None
-                },
-                # EDIT: Add lambda ARN to fulfillment code hook
-                fulfillment_code_hook= {
-                    "enabled": fulfillment_code_hook,
-                    "lambdaCodeHook": {
-                        "lambdaARN": lambda_arn,
-                        "codeHookInterfaceVersion": "1.0"
-                    } if fulfillment_code_hook and lambda_arn else None,
-                    "postFulfillmentStatusSpecification": self._post_fulfillment_prompt(
-                        {"value": intent.get("fulfillment_prompt")} if intent.get("fulfillment_prompt") else None
-                    ),
-                },
-                sample_utterances= [{"utterance": u} for u in intent.get("utterances", [])],
-                slot_priorities= slot_priorities,
-                slots = self._transform_slots(intent),
-                intent_confirmation_setting= self._transform_intent_confirmation(intent.confirmation_prompt),
-            )
-            formatted_intents.append(formatted)
-
-        # Add fallback intent
-        fallback_intent = {
-            "name": "FallbackIntent",
-            # EDIT: Add lambda ARN to dialog code hook for fallback intent
-            "dialogCodeHook": {
-                "enabled": dialog_code_hook,
-                "lambdaCodeHook": {
-                    "lambdaARN": lambda_arn,
-                    "codeHookInterfaceVersion": "1.0"
-                } if dialog_code_hook and lambda_arn else None
-            },
-            # EDIT: Add lambda ARN to fulfillment code hook for fallback intent
-            "fulfillmentCodeHook": {
-                "enabled": fulfillment_code_hook,
-                "lambdaCodeHook": {
-                    "lambdaARN": lambda_arn,
-                    "codeHookInterfaceVersion": "1.0"
-                } if fulfillment_code_hook and lambda_arn else None
-            },
-            "parentIntentSignature": "AMAZON.FallbackIntent",
-        }
-        formatted_intents.append(fallback_intent)
-
-        return formatted_intents
+    
 
     # Rest of the class remains unchanged
     def _transform_slot_type(self, slot_type: dict) -> dict:
