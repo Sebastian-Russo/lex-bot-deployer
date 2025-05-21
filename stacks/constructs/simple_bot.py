@@ -180,6 +180,25 @@ class SimpleLocale:
             intents=intents,
         )
 
+    def to_cdk_bot_alias_locale_setting(self) -> CfnBotAlias.BotAliasLocaleSettingsItemProperty:
+        code_hook_specification = None
+        if(self.code_hook is not None):
+            code_hook_specification = CfnBotAlias.CodeHookSpecificationProperty(
+                lambda_code_hook={
+                    'code_hook_interface_version': '1.0',
+                    'lambda_arn': self.code_hook.lambda_.function_arn
+                }
+            )
+
+        return CfnBotAlias.BotAliasLocaleSettingsItemProperty(
+            bot_alias_locale_setting=CfnBotAlias.BotAliasLocaleSettingsProperty(
+                enabled=True,
+                code_hook_specification=code_hook_specification
+            ),
+            locale_id=self.locale_id
+        )
+
+
 
 class SimpleBot(Construct):
     """
@@ -242,8 +261,8 @@ class SimpleBot(Construct):
             bot_locales=self._map_locales(locales, nlu_confidence_threshold),
             auto_build_bot_locales=False,  # Turned off to prevent build issues
             test_bot_alias_settings={
-                "botAliasLocaleSettings": self.bot_alias_locales(),
-                "conversationLogSettings": self.conversation_log_settings('TestBotAlias')
+                "bot_alias_locale_settings": self.to_bot_alias_locale_settings(),
+                "conversation_log_settings": self.conversation_log_settings('TestBotAlias')
             },
             # Add the required tag for Connect permissions
             bot_tags=[
@@ -271,7 +290,7 @@ class SimpleBot(Construct):
             self, 'Alias',
             bot_alias_name='live',
             bot_id=self.bot.attr_id,
-            bot_alias_locale_settings=self.bot_alias_locales(),
+            bot_alias_locale_settings=self.to_bot_alias_locale_settings(),
             bot_version=self.version.attr_bot_version,
             conversation_log_settings=self.conversation_log_settings('live')
         )
@@ -328,7 +347,8 @@ class SimpleBot(Construct):
         """Map SimpleLocale objects to the format expected by CfnBot"""
         return [l.to_cdk_locale(nlu_confidence_threshold) for l in locales]
 
-    
+    def to_bot_alias_locale_settings(self) -> List[CfnBotAlias.BotAliasLocaleSettingsItemProperty]:
+        return [locale.to_cdk_bot_alias_locale_setting() for locale in self.locales]
 
     # Rest of the class remains unchanged
     def _transform_slot_type(self, slot_type: dict) -> dict:
@@ -348,57 +368,45 @@ class SimpleBot(Construct):
             }
         }
 
-    def bot_alias_locales(self):
-        """Return bot alias locale settings"""
-        return [{
-            "localeId": locale["locale_id"],  # camelCase output for AWS
-            "botAliasLocaleSetting": {  # camelCase output for AWS
-                "enabled": True,
-            # Add code hook if lambda is provided - matches TypeScript logic
-            "codeHookSpecification": {
-                "lambdaCodeHook": {
-                    "codeHookInterfaceVersion": "1.0",
-                    "lambdaArn": locale["code_hook"]["lambda_"].function_arn
-                }
-            } if locale.get("code_hook") and locale["code_hook"].get("lambda_") else None
-        }
-    } for locale in self.locales]
-
-    def conversation_log_settings(self, alias_name: str):
+    def conversation_log_settings(self, alias_name: str) -> Optional[CfnBotAlias.ConversationLogSettingsProperty]:
         """Return conversation log settings"""
         # Return None if neither log group nor audio bucket exists
         if not self.log_group and not self.audio_bucket:
             return None
 
-        settings = {}
+        audio_setting: CfnBotAlias.AudioLogSettingProperty = None
+        log_settings: CfnBotAlias.TextLogSettingProperty = None
 
         # Add audio log settings if audio bucket exists
         if self.audio_bucket:
-            settings["audioLogSettings"] = [
-                {
-                    "enabled": True,
-                    "destination": {
-                        "s3Bucket": {
-                            "s3BucketArn": self.audio_bucket.bucket_arn,
-                            "logPrefix": f"{self.name}/{alias_name}"
-                            # "kmsKeyArn": "todo"  # Commented out like in TS version
-                        }
-                    }
-                }
+            audio_setting = [
+                CfnBotAlias.AudioLogSettingProperty(
+                    enabled=True,
+                    destination=CfnBotAlias.AudioLogDestinationProperty(
+                        s3_bucket=CfnBotAlias.S3BucketLogDestinationProperty(
+                            s3_bucket_arn=self.audio_bucket.bucket_arn,
+                            log_prefix=f"{self.name}/{alias_name}",
+                            # "kmsKeyArn": "todo"
+                        )
+                    )
+                )
             ]
 
         # Add text log settings if log group exists
         if self.log_group:
-            settings["textLogSettings"] = [
-                {
-                    "enabled": True,
-                    "destination": {
-                        "cloudWatch": {
-                            "cloudWatchLogGroupArn": self.log_group.log_group_arn,
-                            "logPrefix": f"{self.name}/{alias_name}"
-                        }
-                    }
-                }
+            log_settings = [
+                CfnBotAlias.TextLogSettingProperty(
+                    enabled=True,
+                    destination=CfnBotAlias.TextLogDestinationProperty(
+                        cloud_watch=CfnBotAlias.CloudWatchLogGroupLogDestinationProperty(
+                            cloud_watch_log_group_arn=self.log_group.log_group_arn,
+                            log_prefix=f"{self.name}/{alias_name}"
+                        )
+                    )
+                )
             ]
 
-        return settings
+        return CfnBotAlias.ConversationLogSettingsProperty(
+            audio_log_settings=audio_setting,
+            text_log_settings=log_settings,
+        )
