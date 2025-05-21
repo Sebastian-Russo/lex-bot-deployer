@@ -28,13 +28,35 @@ class CodeHook:
 class SimpleSlot:
     name: str
     slot_type_name: str
-    description: Optional[str] = None
-    elicitation_messages: List[str] = None
-    allow_interrupt: Optional[bool] = None
-    max_retries: Optional[int] = None
-    required: Optional[bool] = None
+    elicitation_messages: List[str]
+    description: Optional[str]
+    allow_interrupt: bool = False
+    max_retries: int = 3
+    required: bool = False
 
-
+    def to_cdk_slot(self) -> CfnBot.SlotProperty:
+        return CfnBot.SlotProperty(
+            name=self.name,
+            description=self.description,
+            slot_type_name=self.slot_type_name,  # Match TypeScript input format
+            value_elicitation_setting=CfnBot.SlotValueElicitationSettingProperty(
+                slot_constraint="Required" if self.required else "Optional",
+                prompt_specification=CfnBot.PromptSpecificationProperty(
+                    allow_interrupt=self.allow_interrupt,
+                    max_retries=self.max_retries,
+                    message_groups_list=[
+                        {
+                            "message": {
+                                "plain_text_message": {
+                                    "value": message
+                                }
+                            }
+                        } for message in self.elicitation_messages
+                    ]
+                )
+            )
+        )
+    
 @dataclass
 class SimpleSlotTypeValue:
     sample_value: str
@@ -57,7 +79,7 @@ class SimpleIntent:
     confirmation_prompt: Optional[str] = None
     fulfillment_prompt: Optional[str] = None
 
-    def to_cdk(self, dialog_code_hook: bool, fulfillment_code_hook: bool) -> CfnBot.IntentProperty:
+    def to_cdk_intent(self, dialog_code_hook: bool, fulfillment_code_hook: bool) -> CfnBot.IntentProperty:
         # Prepare slot priorities if slots exist
         slot_priorities: List[CfnBot.SlotPriorityProperty] = None
         if self.slots:
@@ -68,6 +90,10 @@ class SimpleIntent:
                 }
                 for idx, slot in enumerate(self.slots)
             ]
+
+        slots: List[CfnBot.SlotProperty] = []
+        if self.slots:
+            slots = [slot.to_cdk_slot() for slot in self.slots]
 
         return CfnBot.IntentProperty(
             name=self.name,
@@ -80,7 +106,7 @@ class SimpleIntent:
             },
             sample_utterances= [{"utterance": u} for u in self.utterances],
             slot_priorities= slot_priorities,
-            slots = self._transform_slots(self.slots),
+            slots = slots,
             intent_confirmation_setting= self._transform_intent_confirmation(self.confirmation_prompt),
         )
 
@@ -129,16 +155,16 @@ class SimpleLocale:
     slot_types: Optional[List[SimpleSlotType]] = None
     code_hook: Optional[CodeHook] = None
 
-    def to_cdk(self, nlu_confidence_threshold: float) -> CfnBot.BotLocaleProperty:
+    def to_cdk_locale(self, nlu_confidence_threshold: float) -> CfnBot.BotLocaleProperty:
         dialog_code_hook = False
         fulfillment_code_hook = False
         if self.code_hook:
             dialog_code_hook = self.code_hook.dialog
             fulfillment_code_hook = self.code_hook.fulfillment
 
-        intents = [intent.to_cdk(dialog_code_hook, fulfillment_code_hook) for intent in self.intents]
+        intents = [intent.to_cdk_intent(dialog_code_hook, fulfillment_code_hook) for intent in self.intents]
         intents.append(CfnBot.IntentProperty(
-            name= 'FallbackIntent',
+            name='FallbackIntent',
             dialog_code_hook={ "enabled": dialog_code_hook },
             fulfillment_code_hook={ "enabled": fulfillment_code_hook },
             parent_intent_signature= 'AMAZON.FallbackIntent',
@@ -300,7 +326,7 @@ class SimpleBot(Construct):
 
     def _map_locales(self, locales: List[SimpleLocale], nlu_confidence_threshold: float) -> List[CfnBot.BotLocaleProperty]:
         """Map SimpleLocale objects to the format expected by CfnBot"""
-        return [l.to_cdk(nlu_confidence_threshold) for l in locales]
+        return [l.to_cdk_locale(nlu_confidence_threshold) for l in locales]
 
     
 
@@ -321,35 +347,6 @@ class SimpleBot(Construct):
                 "resolution_strategy": slot_type.get("resolution_strategy", "OriginalValue")
             }
         }
-
-    def _transform_slots(self, intent: SimpleIntent) -> Optional[List[CfnBot.SlotProperty]]:
-        if(intent.slots is None or len(intent.slots) == 0):
-            return None
-
-        """Transform intent slots to Lex format"""
-        return [CfnBot.SlotProperty(
-            name=slot.name,
-            description=slot.description,
-            slot_type_name=slot.slot_type_name,  # Match TypeScript input format
-            value_elicitation_setting={
-                "slotConstraint": "Required" if slot.required else "Optional",
-                "promptSpecification": {
-                    "allowInterrupt": slot.allow_interrupt,
-                    "maxRetries": slot.max_retries,
-                    "messageGroupsList": [
-                        {
-                            "message": {
-                                "plainTextMessage": {
-                                    "value": message
-                                }
-                            }
-                        } for message in slot.elicitation_messages
-                    ]
-                }
-            }
-        ) for slot in intent.slots]
-
-
 
     def bot_alias_locales(self):
         """Return bot alias locale settings"""
