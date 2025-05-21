@@ -11,7 +11,6 @@ from aws_cdk import aws_s3 as s3
 from aws_cdk import Stack
 from constructs import Construct
 from .lex_role import LexRole
-from .update_neural_engine import UpdateNeuralEngine, UpdateNeuralEngineProps
 from .associate_lex_bot import AssociateLexBot
 from ..lex_defaults import LexDefaults
 from ..utils.hash_code import hash_code
@@ -151,7 +150,7 @@ class SimpleLocale:
     voice_id: str
     intents: List[SimpleIntent]
     description: Optional[str] = None
-    engine: Optional[str] = None
+    engine: Optional[str] = 'neural'
     slot_types: Optional[List[SimpleSlotType]] = None
     code_hook: Optional[CodeHook] = None
 
@@ -174,7 +173,8 @@ class SimpleLocale:
             locale_id=self.locale_id,
             nlu_confidence_threshold=nlu_confidence_threshold,
             voice_settings={
-                "voiceId": self.voice_id
+                "voiceId": self.voice_id,
+                "engine": self.engine
             },
             # TODO: Implement Slot Types
             intents=intents,
@@ -199,6 +199,18 @@ class SimpleLocale:
         )
 
 
+@dataclass
+class SimpleBotProps:
+    name: str
+    locales: List[SimpleLocale]
+    description: Optional[str] = None
+    role: Optional[iam.IRole] = None
+    log_group: Optional[logs.LogGroup] = None
+    audio_bucket: Optional[s3.Bucket] = None
+    connect_instance_arn: Optional[str] = None
+    idle_session_ttl_in_seconds: int = 300
+    nlu_confidence_threshold: float = 0.75
+    prefix: Optional[str] = None
 
 class SimpleBot(Construct):
     """
@@ -206,64 +218,40 @@ class SimpleBot(Construct):
     Use this as a pattern or extend/modify/fork this class for more complex cases.
     """
 
-    def __init__(self, scope: Construct, id: str, *,
-                 name: str,
-                 description: Optional[str] = None,
-                 locales: List[SimpleLocale],
-                 role: Optional[iam.IRole] = None,
-                 log_group: Optional[logs.LogGroup] = None,
-                 audio_bucket: Optional[s3.Bucket] = None,
-                 connect_instance_arn: Optional[str] = None,
-                 idle_session_ttl_in_seconds: Optional[int] = None,
-                 nlu_confidence_threshold: Optional[float] = None,
-                 prefix: Optional[str] = None,
-                 **kwargs):
+    def __init__(self, scope: Construct, id: str, *, props: SimpleBotProps, **kwargs):
         # Only pass scope and id to the Construct base class
         super().__init__(scope, id)
 
-        version_id = f'Version{hash_code(self)}'
+        version_id = f'Version{hash_code(props)}'
+        self.props = props
 
         # Store parameters as instance variables
-        self.name = name
-        self.description = description
-        self.locales = locales
-        self.role = role
-        self.log_group = log_group
-        self.audio_bucket = audio_bucket
-        self.connect_instance_arn = connect_instance_arn
         self.region = Stack.of(scope).region
         self.account = Stack.of(scope).account
-        self.prefix = prefix  # Store the prefix parameter
 
-        # Ensure we have valid default values
-        if idle_session_ttl_in_seconds is None:
-            idle_session_ttl_in_seconds = 300  # Default to 5 minutes
-        if nlu_confidence_threshold is None:
-            nlu_confidence_threshold = 0.75  # Default to 75%
-
-        self.idle_session_ttl_in_seconds = idle_session_ttl_in_seconds
-        self.nlu_confidence_threshold = nlu_confidence_threshold
 
         # Create or use provided role
-        self.role = self.role or LexRole(
+        self.role = props.role or LexRole(
             self, 'Role',
             props=LexRoleProps(
-                lex_log_group_name=self.log_group.log_group_name if self.log_group else None
+                lex_log_group_name=props.log_group.log_group_name if props.log_group else None
             )
         )
+
+        bot_alias_locale_settings = [locale.to_cdk_bot_alias_locale_setting() for locale in props.locales]
 
         # Create bot
         self.bot = CfnBot(
             self, 'Bot',
-            name=self.name[:50],  # Trim to 50 characters
-            description=self.description,
-            idle_session_ttl_in_seconds=self.idle_session_ttl_in_seconds,
+            name=props.name[:50],  # Trim to 50 characters
+            description=props.description,
+            idle_session_ttl_in_seconds=props.idle_session_ttl_in_seconds,
             role_arn=self.role.role_arn,
             data_privacy={"ChildDirected": False},
-            bot_locales=[l.to_cdk_locale(self.nlu_confidence_threshold) for l in self.locales],
+            bot_locales=[l.to_cdk_locale(props.nlu_confidence_threshold) for l in props.locales],
             auto_build_bot_locales=False,  # Turned off to prevent build issues
             test_bot_alias_settings={
-                "bot_alias_locale_settings": self.to_bot_alias_locale_settings(),
+                "bot_alias_locale_settings": bot_alias_locale_settings,
                 "conversation_log_settings": self.conversation_log_settings('TestBotAlias')
             },
             # Add the required tag for Connect permissions
@@ -284,7 +272,7 @@ class SimpleBot(Construct):
                 bot_version_locale_details=CfnBotVersion.BotVersionLocaleDetailsProperty(
                     source_bot_version="DRAFT"
                 )
-            ) for locale in self.locales]
+            ) for locale in props.locales]
         )
 
         # Create alias
@@ -292,13 +280,13 @@ class SimpleBot(Construct):
             self, 'Alias',
             bot_alias_name='live',
             bot_id=self.bot.attr_id,
-            bot_alias_locale_settings=self.to_bot_alias_locale_settings(),
+            bot_alias_locale_settings=bot_alias_locale_settings,
             bot_version=self.version.attr_bot_version,
             conversation_log_settings=self.conversation_log_settings('live')
         )
 
         # Add permissions for lambdas
-        for locale in self.locales:
+        for locale in props.locales:
             if locale.code_hook and locale.code_hook.lambda_:
                 locale.code_hook.lambda_.add_permission(
                     f"lex-lambda-invoke-{locale.locale_id}",
@@ -308,9 +296,9 @@ class SimpleBot(Construct):
                 )
 
         # Associate with connect if provided
-        if self.connect_instance_arn:
+        if props.connect_instance_arn:
             # This adds permissions for Connect to invoke Lambda functions
-            for locale in self.locales:
+            for locale in props.locales:
                 if locale.code_hook and locale.code_hook.lambda_:
                     locale.code_hook.lambda_.add_permission(
                         f"connect-lambda-invoke-{locale.locale_id}",
@@ -321,32 +309,9 @@ class SimpleBot(Construct):
 
             AssociateLexBot(
                 self, 'Association',
-                connect_instance_arn=self.connect_instance_arn,
+                connect_instance_arn=props.connect_instance_arn,
                 alias=self.alias
             )
-
-        # Update neural engine for locales that need it
-        neural_locales = [l for l in self.locales if (l.engine or LexDefaults.engine) == 'neural']
-        for l in neural_locales:
-            id = f"{l.locale_id}Neural"
-            # Create UpdateNeuralEngineProps instance
-            props = UpdateNeuralEngineProps(
-                bot_id=self.bot.attr_id,
-                description=l.description,
-                locale_id=l.locale_id,
-                nlu_intent_confidence_threshold=self.nlu_confidence_threshold,
-                voice_id=l.voice_id
-            )
-
-            # Pass the props object
-            engine_update = UpdateNeuralEngine(
-                self, id, props=props
-            )
-            self.version.node.add_dependency(engine_update)
-            self.alias.node.add_dependency(engine_update)
-
-    def to_bot_alias_locale_settings(self) -> List[CfnBotAlias.BotAliasLocaleSettingsItemProperty]:
-        return [locale.to_cdk_bot_alias_locale_setting() for locale in self.locales]
 
     # Rest of the class remains unchanged
     def _transform_slot_type(self, slot_type: dict) -> dict:
@@ -368,22 +333,26 @@ class SimpleBot(Construct):
 
     def conversation_log_settings(self, alias_name: str) -> Optional[CfnBotAlias.ConversationLogSettingsProperty]:
         """Return conversation log settings"""
+
+        log_group = self.props.log_group
+        audio_bucket =self.props.audio_bucket
+
         # Return None if neither log group nor audio bucket exists
-        if not self.log_group and not self.audio_bucket:
+        if not log_group and not audio_bucket:
             return None
 
         audio_setting: CfnBotAlias.AudioLogSettingProperty = None
         log_settings: CfnBotAlias.TextLogSettingProperty = None
 
         # Add audio log settings if audio bucket exists
-        if self.audio_bucket:
+        if audio_bucket:
             audio_setting = [
                 CfnBotAlias.AudioLogSettingProperty(
                     enabled=True,
                     destination=CfnBotAlias.AudioLogDestinationProperty(
                         s3_bucket=CfnBotAlias.S3BucketLogDestinationProperty(
-                            s3_bucket_arn=self.audio_bucket.bucket_arn,
-                            log_prefix=f"{self.name}/{alias_name}",
+                            s3_bucket_arn=audio_bucket.bucket_arn,
+                            log_prefix=f"{self.props.name}/{alias_name}",
                             # "kmsKeyArn": "todo"
                         )
                     )
@@ -391,14 +360,14 @@ class SimpleBot(Construct):
             ]
 
         # Add text log settings if log group exists
-        if self.log_group:
+        if log_group:
             log_settings = [
                 CfnBotAlias.TextLogSettingProperty(
                     enabled=True,
                     destination=CfnBotAlias.TextLogDestinationProperty(
                         cloud_watch=CfnBotAlias.CloudWatchLogGroupLogDestinationProperty(
-                            cloud_watch_log_group_arn=self.log_group.log_group_arn,
-                            log_prefix=f"{self.name}/{alias_name}"
+                            cloud_watch_log_group_arn=log_group.log_group_arn,
+                            log_prefix=f"{self.props.name}/{alias_name}"
                         )
                     )
                 )

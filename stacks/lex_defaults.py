@@ -8,9 +8,6 @@ Default values for the bots.
 You can override this in the individual bot configuration.
 """
 class LexDefaults:
-    # Default engine type
-    engine: VoiceEngine = "neural"
-
     # Session timeout in seconds
     idle_session_ttl_in_seconds: int = 300
 

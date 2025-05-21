@@ -1,5 +1,5 @@
 from constructs import Construct
-from ..constructs.simple_bot import SimpleBot, SimpleLocale, SimpleIntent
+from ..constructs.simple_bot import SimpleBot, SimpleBotProps, SimpleLocale, SimpleIntent
 from aws_cdk import aws_iam as iam
 from typing import Optional, List
 
@@ -30,7 +30,7 @@ class YesNoBot(SimpleBot):
                         utterances=[
                             'yeah', 'yep', 'yea', 'yes', 'all right',
                             'surely', 'yes sir', 'of course', 'absolutely',
-                            'for sure', 'totally', 'correct', 'si'
+                            'for sure', 'totally', 'correct', 'si', 'bueno'
                         ],
                     ),
                     SimpleIntent(
@@ -72,13 +72,15 @@ class YesNoBot(SimpleBot):
 
         super().__init__(
             scope, id,
-            name=f"{prefix}-yes-no",
-            description=description,
-            locales=locales,
-            role=role,
-            idle_session_ttl_in_seconds=idle_session_ttl_in_seconds,
-            nlu_confidence_threshold=nlu_confidence_threshold,
-            log_group=log_group,
-            audio_bucket=audio_bucket,
+            props=SimpleBotProps(
+                name=f"{prefix}-yes-no",
+                description=description,
+                locales=locales,
+                role=role,
+                idle_session_ttl_in_seconds=idle_session_ttl_in_seconds,
+                nlu_confidence_threshold=nlu_confidence_threshold,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
             **kwargs
         )
