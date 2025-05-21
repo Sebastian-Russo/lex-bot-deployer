@@ -230,39 +230,35 @@ class SimpleBot(Construct):
         return [l.to_cdk(nlu_confidence_threshold) for l in locales]
 
     # EDIT: Updated function signature to accept code_hook parameter
-    def _format_intents(self, intents: List[SimpleIntent], code_hook=None):
+    def _format_intents(self, intents: List[SimpleIntent], code_hook: Optional[CodeHook] = None) -> List[CfnBot.IntentProperty]:
         """
         Format a list of SimpleIntent objects into the structure expected by Lex CfnBot.
         This matches the logic of the provided TypeScript reference.
         """
-        formatted_intents = []
+        formatted_intents: List[CfnBot.IntentProperty] = []
 
-        # EDIT: Get code hook settings from parameter, not self
         dialog_code_hook = False
         fulfillment_code_hook = False
         lambda_arn = None
-
-        # EDIT: Extract values from the passed code_hook parameter
         if code_hook:
-            dialog_code_hook = code_hook.get('dialog', False)
-            fulfillment_code_hook = code_hook.get('fulfillment', False)
-            if code_hook.get('lambda_'):
-                lambda_arn = code_hook.get('lambda_').function_arn
-
+            dialog_code_hook = code_hook.dialog
+            fulfillment_code_hook = code_hook.fulfillment
+            lambda_arn = code_hook.lambda_.function_arn
+                
         for intent in intents:
             # Prepare slot priorities if slots exist
             slot_priorities = None
-            slots = intent.get("slots")
+            slots = intent.slots
             if slots:
                 slot_priorities = [
                     {"slotName": slot.get("name"), "priority": idx + 1}
                     for idx, slot in enumerate(slots)
                 ]
 
-            formatted = {
-                "name": intent.get("name"),
+            formatted: CfnBot.IntentProperty = CfnBot.IntentProperty(
+                name=intent.name,
                 # EDIT: Add lambda ARN to dialog code hook
-                "dialogCodeHook": {
+                dialog_code_hook={
                     "enabled": dialog_code_hook,
                     "lambdaCodeHook": {
                         "lambdaARN": lambda_arn,
@@ -270,7 +266,7 @@ class SimpleBot(Construct):
                     } if dialog_code_hook and lambda_arn else None
                 },
                 # EDIT: Add lambda ARN to fulfillment code hook
-                "fulfillmentCodeHook": {
+                fulfillment_code_hook= {
                     "enabled": fulfillment_code_hook,
                     "lambdaCodeHook": {
                         "lambdaARN": lambda_arn,
@@ -280,13 +276,11 @@ class SimpleBot(Construct):
                         {"value": intent.get("fulfillment_prompt")} if intent.get("fulfillment_prompt") else None
                     ),
                 },
-                "sampleUtterances": [{"utterance": u} for u in intent.get("utterances", [])],
-                "slotPriorities": slot_priorities,
-                "slots": self._transform_slots({"slots": slots}) if slots else [],
-                "intentConfirmationSetting": self._transform_intent_confirmation(
-                    {"message_groups": [{"message": intent.get("confirmation_prompt")}]} if intent.get("confirmation_prompt") else {}
-                ) if intent.get("confirmation_prompt") else None,
-            }
+                sample_utterances= [{"utterance": u} for u in intent.get("utterances", [])],
+                slot_priorities= slot_priorities,
+                slots = self._transform_slots(intent),
+                intent_confirmation_setting= self._transform_intent_confirmation(intent.confirmation_prompt),
+            )
             formatted_intents.append(formatted)
 
         # Add fallback intent
@@ -332,17 +326,20 @@ class SimpleBot(Construct):
             }
         }
 
-    def _transform_slots(self, intent: dict) -> List[dict]:
+    def _transform_slots(self, intent: SimpleIntent) -> Optional[List[CfnBot.SlotProperty]]:
+        if(intent.slots is None or len(intent.slots) == 0):
+            return None
+
         """Transform intent slots to Lex format"""
-        return [{
-            "name": slot.get("name"),
-            "description": slot.get("description"),
-            "slotTypeName": slot.get("slot_type_name"),  # Match TypeScript input format
-            "valueElicitationSetting": {
-                "slotConstraint": "Required" if slot.get("required") else "Optional",
+        return [CfnBot.SlotProperty(
+            name=slot.name,
+            description=slot.description,
+            slot_type_name=slot.slot_type_name,  # Match TypeScript input format
+            value_elicitation_setting={
+                "slotConstraint": "Required" if slot.required else "Optional",
                 "promptSpecification": {
-                    "allowInterrupt": slot.get("allow_interrupt", True),
-                    "maxRetries": slot.get("max_retries", 2),
+                    "allowInterrupt": slot.allow_interrupt,
+                    "maxRetries": slot.max_retries,
                     "messageGroupsList": [
                         {
                             "message": {
@@ -350,55 +347,30 @@ class SimpleBot(Construct):
                                     "value": message
                                 }
                             }
-                        } for message in slot.get("elicitation_messages", [])
+                        } for message in slot.elicitation_messages
                     ]
-                },
-                "sampleUtterances": [{"utterance": u} for u in slot.get("sample_utterances", [])]
-            },
-            "obfuscationSetting": {
-                "obfuscationSettingType": "None"
+                }
             }
-        } for slot in intent.get("slots", [])]
+        ) for slot in intent.slots]
 
-    def _transform_intent_confirmation(self, prompt) -> Optional[dict]:
-        """Transform a confirmation prompt to the full AWS structure"""
+    def _transform_intent_confirmation(self, prompt: str) -> CfnBot.IntentConfirmationSettingProperty:
         if not prompt:
             return None
 
-        # If prompt is already a dictionary, extract the message
-        if isinstance(prompt, dict) and 'message_groups' in prompt:
-            message_groups = prompt.get('message_groups', [])
-            if message_groups and isinstance(message_groups[0], dict):
-                prompt = message_groups[0].get('message', '')
-        # If prompt is a dictionary-like string, extract the message
-        elif isinstance(prompt, str) and prompt.startswith('{') and 'message' in prompt:
-            try:
-                # Try to extract message from a dictionary-like string
-                import ast
-                prompt_dict = ast.literal_eval(prompt)
-                if isinstance(prompt_dict, dict) and 'message_groups' in prompt_dict:
-                    message_groups = prompt_dict.get('message_groups', [])
-                    if message_groups and isinstance(message_groups[0], dict):
-                        prompt = message_groups[0].get('message', prompt)
-            except:
-                # If parsing fails, use the original prompt
-                pass
-
-        return {
-            "promptSpecification": {
-                "maxRetries": 3,
-                "messageGroupsList": [
-                    {
+        return CfnBot.IntentConfirmationSettingProperty(
+            prompt_specification=CfnBot.PromptSpecificationProperty(
+                max_retries=3,
+                message_groups_list=[
+                    CfnBot.MessageGroupProperty({
                         "message": {
-                            "plainTextMessage": {
-                                "value": str(prompt)  # Just the plain message
+                            "plain_text_message": {
+                                "value": prompt
                             }
                         }
-                    }
-                ],
-                # "allowInterrupt": True
-            }
-        }
+                    })
+                ]
+            )
+        )    
 
     # TODO: messageGroupsList OR message_groups_list ?
     def _post_fulfillment_prompt(self, prompt: dict) -> dict:
