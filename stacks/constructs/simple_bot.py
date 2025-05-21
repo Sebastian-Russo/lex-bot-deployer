@@ -1,3 +1,4 @@
+from threading import local
 from typing import List, Optional, Dict, Any, Union, TypedDict
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
@@ -15,7 +16,7 @@ from .associate_lex_bot import AssociateLexBot
 from ..lex_defaults import LexDefaults
 from ..utils.hash_code import hash_code
 from dataclasses import dataclass
-from typing import TypedDict, List, Optional
+from typing import List, Optional
 
 
 @dataclass
@@ -69,6 +70,17 @@ class SimpleLocale:
     slot_types: Optional[List[SimpleSlotType]] = None
     code_hook: Optional[CodeHook] = None
 
+    def to_cdk(self, nlu_confidence_threshold: float) -> CfnBot.BotLocaleProperty:
+        return CfnBot.BotLocaleProperty(
+            locale_id=self.locale_id,
+            nlu_confidence_threshold=nlu_confidence_threshold,
+            voice_settings={
+                "voiceId": self.voice_id
+            },
+            # TODO: Implement Slot Types
+            intents=self._format_intents(self.intents),
+        )
+
 
 class SimpleBot(Construct):
     """
@@ -79,7 +91,7 @@ class SimpleBot(Construct):
     def __init__(self, scope: Construct, id: str, *,
                  name: str,
                  description: Optional[str] = None,
-                 locales: List[Dict],
+                 locales: List[SimpleLocale],
                  role: Optional[iam.IRole] = None,
                  log_group: Optional[logs.LogGroup] = None,
                  audio_bucket: Optional[s3.Bucket] = None,
@@ -213,41 +225,9 @@ class SimpleBot(Construct):
             self.version.node.add_dependency(engine_update)
             self.alias.node.add_dependency(engine_update)
 
-    def _map_locales(self, locales, nlu_confidence_threshold: float):
+    def _map_locales(self, locales: List[SimpleLocale], nlu_confidence_threshold: float) -> List[CfnBot.BotLocaleProperty]:
         """Map SimpleLocale objects to the format expected by CfnBot"""
-        return [self._format_locale(l, nlu_confidence_threshold) for l in locales]
-
-    def _format_locale(self, locale: SimpleLocale, nlu_confidence_threshold: float):
-        """Format a single locale for CfnBot"""
-        # Get code hooks from locale using safe access
-        code_hook = locale.get('code_hook', {})
-        dialog_code_hook = code_hook.get('dialog', False)
-        fulfillment_code_hook = code_hook.get('fulfillment', False)
-
-        # EDIT: Pass the lambda ARN correctly to intents
-        lambda_arn = None
-        if code_hook and code_hook.get('lambda_'):
-            lambda_arn = code_hook.get('lambda_').function_arn
-
-        return {
-            "localeId": locale['locale_id'],
-            "description": locale.get('description'),
-            "nluConfidenceThreshold": nlu_confidence_threshold,
-            "voiceSettings": {
-                "voiceId": locale['voice_id']
-            },
-            # EDIT: Pass code_hook to _format_intents
-            "intents": self._format_intents(locale['intents'], code_hook),
-            "botLocaleSetting": {
-                "enabled": True,
-                "codeHookSpecification": {
-                    "lambdaCodeHook": {
-                        "codeHookInterfaceVersion": "1.0",
-                        "lambdaArn": lambda_arn
-                    }
-                } if lambda_arn else None
-            }
-        }
+        return [l.to_cdk(nlu_confidence_threshold) for l in locales]
 
     # EDIT: Updated function signature to accept code_hook parameter
     def _format_intents(self, intents: List[SimpleIntent], code_hook=None):

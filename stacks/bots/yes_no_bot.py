@@ -1,7 +1,7 @@
 from constructs import Construct
-from ..constructs.simple_bot import SimpleBot
+from ..constructs.simple_bot import SimpleBot, SimpleLocale, SimpleIntent
 from aws_cdk import aws_iam as iam
-from typing import Optional
+from typing import Optional, List
 
 class YesNoBot(SimpleBot):
     def __init__(
@@ -20,48 +20,48 @@ class YesNoBot(SimpleBot):
         **kwargs
     ):
         # Create locales with Yes/No intents
-        locales = [
-            {
-                "locale_id": "en_US",
-                "voice_id": "Joanna",
-                "intents": [
-                    {
-                        "name": "Yes",
-                        "utterances": [
+        locales: List[SimpleLocale] = [
+            SimpleLocale(
+                locale_id="en_US",
+                voice_id="Joanna",
+                intents=[
+                    SimpleIntent(
+                        name="Yes",
+                        utterances=[
                             'yeah', 'yep', 'yea', 'yes', 'all right',
                             'surely', 'yes sir', 'of course', 'absolutely',
                             'for sure', 'totally', 'correct', 'si'
                         ],
-                    },
-                    {
-                        "name": "No",
-                        "utterances": [
+                    ),
+                    SimpleIntent(
+                        name="No",
+                        utterances=[
                             'nope', 'nah', 'no', 'never', 'no thanks',
                             'no way', 'absolutely not', 'no thank you', 'dont'
                         ],
-                    }
+                    )
                 ]
-            },
-            {
-                "locale_id": "es_US",
-                "voice_id": "Lupe",
-                "intents": [
-                    {
-                        "name": "Yes",
-                        "utterances": [
+            ),
+            SimpleLocale(
+                locale_id="es_US",
+                voice_id="Lupe",
+                intents=[
+                    SimpleIntent(
+                        name="Yes",
+                        utterances=[
                             'sí', 'claro', 'por supuesto', 'correcto', 'totalmente',
                             'absolutamente', 'afirmativo'
                         ],
-                    },
-                    {
-                        "name": "No",
-                        "utterances": [
+                    ),
+                    SimpleIntent(
+                        name="No",
+                        utterances=[
                             'no', 'no gracias', 'de ninguna manera', 'ni hablar',
                             'absolutamente no', 'no es posible', 'nunca'
                         ],
-                    }
-                ]
-            }
+                    )
+                ],
+            ),
         ]
 
         # Ensure we have valid default values
