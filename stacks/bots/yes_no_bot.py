@@ -13,8 +13,8 @@ class YesNoBot(SimpleBot):
         connect_instance_arn: str,
         description: Optional[str] = None,
         role: Optional[iam.IRole] = None,
-        idle_session_ttl_in_seconds: Optional[int] = None,
-        nlu_confidence_threshold: Optional[float] = None,
+        idle_session_ttl_in_seconds: Optional[int] = 300,
+        nlu_confidence_threshold: Optional[float] = 0.75,
         log_group=None,
         audio_bucket=None,
         **kwargs
@@ -64,12 +64,6 @@ class YesNoBot(SimpleBot):
             ),
         ]
 
-        # Ensure we have valid default values
-        if idle_session_ttl_in_seconds is None:
-            idle_session_ttl_in_seconds = 300  # Default to 5 minutes
-        if nlu_confidence_threshold is None:
-            nlu_confidence_threshold = 0.75  # Default to 75%
-
         super().__init__(
             scope, id,
             props=SimpleBotProps(
@@ -81,6 +75,7 @@ class YesNoBot(SimpleBot):
                 nlu_confidence_threshold=nlu_confidence_threshold,
                 log_group=log_group,
                 audio_bucket=audio_bucket,
+                connect_instance_arn=connect_instance_arn,
             ),
             **kwargs
         )
