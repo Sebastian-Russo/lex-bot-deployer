@@ -1,0 +1,157 @@
+{
+  "sessionId": "857240696749547",
+  "inputTranscript": "33445",
+  "interpretations": [
+    {
+      "nluConfidence": 1,
+      "intent": {
+        "name": "AddressChange",
+        "slots": {
+          "zipCode": {
+            "value": {
+              "originalValue": "33445",
+              "resolvedValues": ["33445"],
+              "interpretedValue": "33445"
+            },
+            "shape": "Scalar"
+          },
+          "streetName": {
+            "value": {
+              "originalValue": "Main St",
+              "resolvedValues": ["mainst"],
+              "interpretedValue": "mainst"
+            },
+            "shape": "Scalar"
+          },
+          "city": {
+            "value": {
+              "originalValue": "Delray Beach",
+              "resolvedValues": ["delray beach"],
+              "interpretedValue": "Delray Beach"
+            },
+            "shape": "Scalar"
+          },
+          "houseNumber": {
+            "value": {
+              "originalValue": "123",
+              "resolvedValues": ["123"],
+              "interpretedValue": "123"
+            },
+            "shape": "Scalar"
+          },
+          "state": {
+            "value": {
+              "originalValue": "FL",
+              "resolvedValues": ["fl"],
+              "interpretedValue": "FL"
+            },
+            "shape": "Scalar"
+          }
+        },
+        "state": "ReadyForFulfillment",
+        "confirmationState": "None"
+      },
+      "interpretationSource": "Lex"
+    },
+    {
+      "intent": {
+        "name": "FallbackIntent",
+        "slots": {},
+        "state": "ReadyForFulfillment",
+        "confirmationState": "None"
+      },
+      "interpretationSource": "Lex"
+    },
+    {
+      "nluConfidence": 0.26,
+      "intent": {
+        "name": "Agent",
+        "slots": {},
+        "state": "ReadyForFulfillment",
+        "confirmationState": "None"
+      },
+      "interpretationSource": "Lex"
+    }
+  ],
+  "bot": {
+    "name": "lex-deploy-demo-py-address-change",
+    "version": "DRAFT",
+    "localeId": "en_US",
+    "id": "5SWOUCPCVL",
+    "aliasId": "TSTALIASID",
+    "aliasName": "TestBotAlias"
+  },
+  "responseContentType": "text/plain; charset=utf-8",
+  "messageVersion": "1.0",
+  "sessionState": {
+    "sessionAttributes": {},
+    "intent": {
+      "name": "AddressChange",
+      "slots": {
+        "zipCode": {
+          "value": {
+            "originalValue": "33445",
+            "resolvedValues": ["33445"],
+            "interpretedValue": "33445"
+          },
+          "shape": "Scalar"
+        },
+        "streetName": {
+          "value": {
+            "originalValue": "Main St",
+            "resolvedValues": ["mainst"],
+            "interpretedValue": "mainst"
+          },
+          "shape": "Scalar"
+        },
+        "city": {
+          "value": {
+            "originalValue": "Delray Beach",
+            "resolvedValues": ["delray beach"],
+            "interpretedValue": "Delray Beach"
+          },
+          "shape": "Scalar"
+        },
+        "houseNumber": {
+          "value": {
+            "originalValue": "123",
+            "resolvedValues": ["123"],
+            "interpretedValue": "123"
+          },
+          "shape": "Scalar"
+        },
+        "state": {
+          "value": {
+            "originalValue": "FL",
+            "resolvedValues": ["fl"],
+            "interpretedValue": "FL"
+          },
+          "shape": "Scalar"
+        }
+      },
+      "state": "ReadyForFulfillment",
+      "confirmationState": "None"
+    },
+    "originatingRequestId": "ef9a3e3f-0aa0-4fb5-a3fe-19a6e1e7fad4"
+  },
+  "invocationSource": "FulfillmentCodeHook",
+  "transcriptions": [
+    {
+      "resolvedContext": {
+        "intent": "AddressChange"
+      },
+      "transcriptionConfidence": 1,
+      "transcription": "33445",
+      "resolvedSlots": {
+        "zipCode": {
+          "value": {
+            "originalValue": "33445",
+            "resolvedValues": ["33445"]
+          },
+          "shape": "Scalar"
+        }
+      }
+    }
+  ],
+  "inputMode": "Text"
+}
