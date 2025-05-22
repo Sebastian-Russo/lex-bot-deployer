@@ -1,12 +1,14 @@
+from typing import List, Optional
+
+from aws_cdk import aws_iam as iam
 from constructs import Construct
+
 from ..constructs.simple_bot import (
     SimpleBot,
     SimpleBotProps,
-    SimpleLocale,
     SimpleIntent,
+    SimpleLocale,
 )
-from aws_cdk import aws_iam as iam
-from typing import Optional, List
 
 
 class AgentBusyBot(SimpleBot):
@@ -19,8 +21,6 @@ class AgentBusyBot(SimpleBot):
         connect_instance_arn: str,
         description: Optional[str] = None,
         role: Optional[iam.IRole] = None,
-        idle_session_ttl_in_seconds: Optional[int] = 300,
-        nlu_confidence_threshold: Optional[float] = 0.75,
         log_group=None,
         audio_bucket=None,
         **kwargs,
@@ -108,8 +108,8 @@ class AgentBusyBot(SimpleBot):
                 description=description,
                 locales=locales,
                 role=role,
-                idle_session_ttl_in_seconds=idle_session_ttl_in_seconds,
-                nlu_confidence_threshold=nlu_confidence_threshold,
+                idle_session_ttl_in_seconds=300,
+                nlu_confidence_threshold=0.75,
                 log_group=log_group,
                 audio_bucket=audio_bucket,
                 connect_instance_arn=connect_instance_arn,

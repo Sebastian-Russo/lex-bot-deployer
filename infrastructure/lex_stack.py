@@ -1,20 +1,15 @@
-from aws_cdk import Stack, RemovalPolicy
+from aws_cdk import RemovalPolicy, Stack
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
-
 # Import bot implementations
-from .bots.pin_auth_bot import PinAuthBot
-from .bots.address_change_bot import AddressChangeBot
-from .bots.agent_busy_bot import AgentBusyBot
+from .bots.menu_language_bot import MenuLanguageBot
 
-# from .bots.menu_language_bot import MenuLanguageBot
-# from .bots.office_closed_bot import OfficeClosedBot
-from .bots.yes_no_bot import YesNoBot
+from .bots.office_closed_bot import OfficeClosedBot
+
 # from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
 # from .bots.city_menu_bot import CityMenuBot
-
 # Import constructs
 from .constructs.lex_role import LexRole
 from .constructs.throttled_deploy import throttled_deploy
@@ -90,15 +85,15 @@ class LexStack(Stack):
             #     log_group=log_group,
             #     audio_bucket=audio_bucket
             # ),
-            PinAuthBot(
-                self,
-                'PinAuthBot',
-                prefix=prefix,
-                connect_instance_arn=connect_instance_arn,
-                role=role,
-                log_group=log_group,
-                audio_bucket=audio_bucket,
-            ),
+            # PinAuthBot(
+            #     self,
+            #     'PinAuthBot',
+            #     prefix=prefix,
+            #     connect_instance_arn=connect_instance_arn,
+            #     role=role,
+            #     log_group=log_group,
+            #     audio_bucket=audio_bucket,
+            # ),
             # MenuLanguageBot(
             #     self,
             #     'MenuLanguageBot',
@@ -106,17 +101,17 @@ class LexStack(Stack):
             #     connect_instance_arn=connect_instance_arn,
             #     role=role,
             #     log_group=log_group,
-            #     audio_bucket=audio_bucket
+            #     audio_bucket=audio_bucket,
             # ),
-            # OfficeClosedBot(
-            #     self,
-            #     'OfficeClosedBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket
-            # ),
+            OfficeClosedBot(
+                self,
+                'OfficeClosedBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
             # NonEmergencyMenuBot(
             #     self,
             #     'NonEmergencyMenuBot',

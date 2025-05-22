@@ -1,9 +1,14 @@
-from typing import Optional
+from typing import List, Optional
 
-from constructs import Construct
 from aws_cdk import aws_iam as iam
+from constructs import Construct
 
-from ..constructs.simple_bot import SimpleBot
+from ..constructs.simple_bot import (
+    SimpleBot,
+    SimpleBotProps,
+    SimpleIntent,
+    SimpleLocale,
+)
 
 
 class MenuLanguageBot(SimpleBot):
@@ -16,55 +21,54 @@ class MenuLanguageBot(SimpleBot):
         connect_instance_arn: str,
         description: Optional[str] = None,
         role: Optional[iam.IRole] = None,
-        idle_session_ttl_in_seconds: Optional[int] = None,
-        nlu_confidence_threshold: Optional[float] = None,
         log_group=None,
         audio_bucket=None,
         **kwargs,
     ):
         # Create locales with language selection intents
-        locales = [
-            {
-                'locale_id': 'en_US',
-                'voice_id': 'Joanna',
-                'intents': [
-                    {
-                        'name': 'Spanish',
-                        'utterances': ['spanish', 'espanol', 'espanyol'],
-                    },
-                    {'name': 'English', 'utterances': ['english', 'ingles']},
+        locales: List[SimpleLocale] = [
+            SimpleLocale(
+                locale_id='en_US',
+                voice_id='Joanna',
+                intents=[
+                    SimpleIntent(
+                        name='Spanish',
+                        utterances=['spanish', 'espanol', 'espanyol'],
+                    ),
+                    SimpleIntent(
+                        name='English',
+                        utterances=['english', 'ingles'],
+                    ),
                 ],
-            },
-            {
-                'locale_id': 'es_US',
-                'voice_id': 'Lupe',
-                'intents': [
-                    {
-                        'name': 'Spanish',
-                        'utterances': ['spanish', 'espanol', 'espanyol'],
-                    },
-                    {'name': 'English', 'utterances': ['english', 'ingles']},
+            ),
+            SimpleLocale(
+                locale_id='es_US',
+                voice_id='Lupe',
+                intents=[
+                    SimpleIntent(
+                        name='Spanish',
+                        utterances=['spanish', 'espanol', 'espanyol'],
+                    ),
+                    SimpleIntent(
+                        name='English',
+                        utterances=['english', 'ingles'],
+                    ),
                 ],
-            },
+            ),
         ]
-
-        # Ensure we have valid default values
-        if idle_session_ttl_in_seconds is None:
-            idle_session_ttl_in_seconds = 300  # Default to 5 minutes
-        if nlu_confidence_threshold is None:
-            nlu_confidence_threshold = 0.75  # Default to 75%
 
         super().__init__(
             scope,
             id,
-            name=f'{prefix}-menu-language',
-            description=description,
-            locales=locales,
-            role=role,
-            idle_session_ttl_in_seconds=idle_session_ttl_in_seconds,
-            nlu_confidence_threshold=nlu_confidence_threshold,
-            log_group=log_group,
-            audio_bucket=audio_bucket,
-            connect_instance_arn=connect_instance_arn,
-            **kwargs,
+            props=SimpleBotProps(
+                name=f'{prefix}-menu-language',
+                description=description,
+                role=role,
+                idle_session_ttl_in_seconds=300,
+                nlu_confidence_threshold=0.75,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+                connect_instance_arn=connect_instance_arn,
+                locales=locales,
+            ),
         )
