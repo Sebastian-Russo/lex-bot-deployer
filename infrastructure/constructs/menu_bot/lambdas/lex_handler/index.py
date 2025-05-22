@@ -1,91 +1,76 @@
-import os
 import json
 import logging
-from typing import Any, Dict, Literal
+import os
+from typing import Any, Dict
 
 import boto3
 from botocore.exceptions import ClientError
-from shared_utils.utils.get_env_var import parse_env_var  # From layer
+from helper import LexHelper
 
 logger = logging.getLogger()
 logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
 
+lambda_client = boto3.client('lambda')
 
-class Attributes:
+
+class LexHandler:
     """
-    Attributes for the Lex session
+    Handles Lex events for menu-based bots
     """
 
     def __init__(self):
         """
-        Which action is associated with the intent
+        Initialize the handler with configuration from environment variables
         """
-        self.action: str = ''
+        config_str = os.environ.get('CONFIG')
+        if not config_str:
+            raise ValueError('CONFIG environment variable is required but was empty')
+        self.config = json.loads(config_str)
 
-        """
-        Where to transfer the call
-        """
-        self.destination: str = ''
-
-        """
-        Call should hang up after bot returns
-        """
-        self.hang_up: Literal['true', 'false'] = 'false'
-
-
-class LexHandler:
-    def __init__(self, config: LambdaConfig, lambda_client=None):
-        self.config = config
-        self.lambda_client = lambda_client or boto3.client('lambda')
         self.event = None
         self.helper = None
 
-    @classmethod
-    def create(cls):
-        try:
-            return cls(parse_env_var('CONFIG'), boto3.client('lambda'))
-        except ValueError:
-            # During CDK synth/deploy, provide a dummy config
-            print('INFO: Using dummy config for CDK deployment')
-            try:
-                # Try to create a client with a default region
-                return cls({}, boto3.client('lambda', region_name='us-east-1'))
-            except Exception:
-                # If that fails too, just return without a client
-                return cls({}, None)
-
     def handler(self, event: Dict[str, Any], context=None) -> Dict[str, Any]:
-        logger.info('event: %s', event)
-        self.event = event
+        """
+        Main handler function for Lex events
+        """
+        logger.debug('Event: %s', json.dumps(event, indent=2))
         self.helper = LexHelper(event)
 
         try:
-            if event.get('invocationSource') == 'DialogCodeHook':
+            invocation_source = event.get('invocationSource')
+            if invocation_source == 'DialogCodeHook':
                 return self.dialog_hook()
-            elif event.get('invocationSource') == 'FulfillmentCodeHook':
+            elif invocation_source == 'FulfillmentCodeHook':
                 return self.fulfillment_hook()
             else:
-                raise ValueError(
-                    f'Unknown invocation source {event.get("invocationSource")}'
-                )
-        except Exception as error:
-            logger.error('Unhandled Error: %s', str(error))
+                raise ValueError(f'Unknown invocation source {invocation_source}')
+        except Exception as e:
+            logger.error(f'Unhandled Error: {str(e)}')
             return self.helper.failed_response('Unhandled lambda error')
 
     def dialog_hook(self) -> Dict[str, Any]:
+        """
+        Handle dialog code hook invocations
+        """
         helper = self.helper
         intent = helper.event['sessionState']['intent']
         state = intent.get('state')
         confirmation_state = intent.get('confirmationState')
 
         if state == 'InProgress' and confirmation_state == 'Denied':
-            locale = self.config[helper.locale_id]
+            locale = self.config.get(helper.locale_id, {})
             # User denied confirmation
-            return helper.elicit_intent(locale.get('more_prompt', ''))
+            return helper.elicit_intent(
+                locale.get('morePrompt', 'Is there anything else I can help you with?')
+            )
         else:
             return helper.delegate()
 
     def fulfillment_hook(self) -> Dict[str, Any]:
+        """
+        Handle fulfillment code hook invocations
+        """
         helper = self.helper
         locale_id = helper.locale_id
         intent_name = helper.intent_name
@@ -97,7 +82,7 @@ class LexHandler:
         if intent_name == 'help' or intent_name == 'FallbackIntent':
             return helper.elicit_intent(locale.get('help', ''))
         if intent_name == 'hangUp':
-            return helper.fulfilled_response(locale.get('hang_up', ''))
+            return helper.fulfilled_response(locale.get('hangUp', ''))
         if intent_name not in locale:
             raise ValueError(f'Intent {intent_name} not found in config')
 
@@ -108,47 +93,55 @@ class LexHandler:
         helper.session_attributes['action'] = action.get('type', '')
 
         if action.get('type') == 'Prompt':
-            if action.get('hangUp'):
+            if action.get('hang_up'):
                 helper.session_attributes['hangUp'] = 'true'
                 return helper.fulfilled_response(action.get('prompt', ''))
             message = f'{action.get("prompt", "")}... {locale.get("more_prompt", "")}'
             return helper.elicit_intent(message)
         elif action.get('type') == 'PhoneTransfer':
-            helper.session_attributes['destination'] = action.get('phoneNumber', '')
-            return helper.fulfilled_response()
+            helper.session_attributes['destination'] = action.get('phone_number', '')
+            return helper.fulfilled_response(action.get('pre_transfer_prompt'))
         elif action.get('type') == 'QueueTransfer':
-            helper.session_attributes['destination'] = action.get('queueArn', '')
-            return helper.fulfilled_response()
+            helper.session_attributes['destination'] = action.get('queue_arn', '')
+            return helper.fulfilled_response(action.get('pre_transfer_prompt'))
         elif action.get('type') == 'FlowTransfer':
-            helper.session_attributes['destination'] = action.get('contactFlowArn', '')
-            return helper.fulfilled_response()
+            helper.session_attributes['destination'] = action.get(
+                'contact_flow_arn', ''
+            )
+            return helper.fulfilled_response(action.get('pre_transfer_prompt'))
 
         return helper.failed_response(
             f'Unknown action type: {json.dumps(action, indent=2)}'
         )
 
     def custom_handler(self, lambda_arn: str) -> None:
+        """
+        Invoke a custom handler Lambda function
+        """
         function_name = (
             lambda_arn.split('function/')[-1]
             if 'function/' in lambda_arn
             else lambda_arn
         )
-        logger.info('Passing event to custom handler: %s', function_name)
+        logger.info(f'Passing event to custom handler: {function_name}')
 
         try:
-            response = self.lambda_client.invoke(
+            response = lambda_client.invoke(
                 FunctionName=function_name,
                 InvocationType='Event',
                 Payload=json.dumps(self.event),
             )
-            logger.info('Lambda invocation response: %s', response)
+            logger.info(f'Lambda invocation response: {response}')
         except ClientError as e:
-            logger.error('Error invoking Lambda function: %s', str(e))
+            logger.error(f'Error invoking Lambda function: {str(e)}')
 
 
 # Create handler instance
-handler_class = LexHandler.create()
+handler_instance = LexHandler()
 
 
-def handler(event, context):
-    return handler_class.handler(event, context)
+def handler(event, context=None):
+    """
+    Lambda handler function
+    """
+    return handler_instance.handler(event, context)

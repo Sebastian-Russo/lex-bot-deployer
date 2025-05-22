@@ -205,7 +205,6 @@ class MenuBot(Construct):
 
         # Optionally create Connect module and sample flow
         if include_module:
-            module_name = f'{bot_name} Menu Module'
             module_content = load_flow_content(
                 os.path.join(os.path.dirname(__file__), 'Module.json'),
                 {
@@ -218,7 +217,7 @@ class MenuBot(Construct):
                 self,
                 'ConnectModule',
                 instance_arn=connect_instance_arn,
-                name=module_name,
+                name=f'{bot_name} Module',
                 description=f'Handles interactions with the {bot_name} Lex bot',
                 content=module_content,
             )
@@ -239,7 +238,7 @@ class MenuBot(Construct):
                     'ConnectFlow',
                     instance_arn=connect_instance_arn,
                     type='CONTACT_FLOW',
-                    name=f'{module_name} Sample Flow',
-                    description=f'Demonstrates how to use the {module_name}',
+                    name=f'{bot_name} Flow',
+                    description=f'Handles interactions with the {bot_name} Lex bot',
                     content=flow_content,
                 )

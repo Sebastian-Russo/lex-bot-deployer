@@ -1,0 +1,88 @@
+{
+  "sessionId": "857240696749583",
+  "inputTranscript": "sure",
+  "interpretations": [
+    {
+      "nluConfidence": 1,
+      "intent": {
+        "name": "PoliceTransfer",
+        "slots": {},
+        "state": "ReadyForFulfillment",
+        "confirmationState": "Confirmed"
+      },
+      "interpretationSource": "Lex"
+    },
+    {
+      "intent": {
+        "name": "FallbackIntent",
+        "slots": {},
+        "state": "ReadyForFulfillment",
+        "confirmationState": "None"
+      },
+      "interpretationSource": "Lex"
+    },
+    {
+      "nluConfidence": 0.54,
+      "intent": {
+        "name": "FireDepartmentNumber",
+        "slots": {},
+        "state": "ReadyForFulfillment",
+        "confirmationState": "None"
+      },
+      "interpretationSource": "Lex"
+    },
+    {
+      "nluConfidence": 0.53,
+      "intent": {
+        "name": "hangUp",
+        "slots": {},
+        "state": "ReadyForFulfillment",
+        "confirmationState": "None"
+      },
+      "interpretationSource": "Lex"
+    },
+    {
+      "nluConfidence": 0.43,
+      "intent": {
+        "name": "PublicWorks",
+        "slots": {},
+        "state": "ReadyForFulfillment",
+        "confirmationState": "None"
+      },
+      "interpretationSource": "Lex"
+    }
+  ],
+  "bot": {
+    "name": "lex-deploy-demo-py-NonEmergency",
+    "version": "DRAFT",
+    "localeId": "en_US",
+    "id": "WYYI20HTL1",
+    "aliasId": "TSTALIASID",
+    "aliasName": "TestBotAlias"
+  },
+  "responseContentType": "text/plain; charset=utf-8",
+  "sessionState": {
+    "sessionAttributes": {},
+    "activeContexts": [],
+    "intent": {
+      "name": "PoliceTransfer",
+      "slots": {},
+      "state": "ReadyForFulfillment",
+      "confirmationState": "Confirmed"
+    },
+    "originatingRequestId": "90a7cdb6-24e0-4cd8-8147-8b7d0af2bb07"
+  },
+  "transcriptions": [
+    {
+      "resolvedContext": {
+        "intent": "PoliceTransfer"
+      },
+      "transcriptionConfidence": 1,
+      "transcription": "sure",
+      "resolvedSlots": {}
+    }
+  ],
+  "messageVersion": "1.0",
+  "invocationSource": "FulfillmentCodeHook",
+  "inputMode": "Text"
+}
