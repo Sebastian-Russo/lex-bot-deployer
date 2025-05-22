@@ -51,8 +51,8 @@ class FlowTransferAction(TransferAction):
 class PromptAction(BaseAction):
     """Play a prompt to the user"""
 
-    type = 'Prompt'
     prompt: str
+    type: ActionType = 'Prompt'
     hang_up: bool = False
 
 

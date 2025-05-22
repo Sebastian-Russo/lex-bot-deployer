@@ -2,7 +2,7 @@ import json
 import os
 from typing import List, Optional
 
-from attr import dataclass
+from attr import asdict
 from aws_cdk import aws_connect as connect
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
@@ -11,11 +11,11 @@ from constructs import Construct
 from ...utils.create_lambda import create_lambda
 from ...utils.load_flow_content import load_flow_content
 from ..bot_props import BotProps
-from ..simple_bot import SimpleBot, SimpleBotProps, SimpleIntent, SimpleLocale
+from ..simple_bot import CodeHook, SimpleBot, SimpleBotProps, SimpleIntent, SimpleLocale
 from .models import MenuAction, MenuLocale, TransferAction
 
 
-def convert_to_lambda_config(locales: List[MenuLocale]) -> dict:
+def convert_to_lambda_config(locales: List[MenuLocale]) -> str:
     """
     Convert menu locales to a configuration format for the Lambda function
 
@@ -37,9 +37,9 @@ def convert_to_lambda_config(locales: List[MenuLocale]) -> dict:
 
         # Add menu items and their actions
         for key, value in locale.menu.items():
-            config[locale.locale_id][key] = value.action
+            config[locale.locale_id][key] = asdict(value.action)
 
-    return config
+    return json.dumps(config)
 
 
 def unique_custom_handlers(locales: List[MenuLocale]) -> List[str]:
@@ -73,15 +73,26 @@ def fulfillment_prompt(action: MenuAction) -> Optional[str]:
     return None
 
 
-@dataclass
 class MenuBotProps(BotProps):
     """
     Properties for the MenuBot construct
     """
 
-    locales: List[MenuLocale]
-    include_module: bool = True
-    include_sample_flow: bool = False
+    def __init__(
+        self,
+        *,
+        locales: List[MenuLocale],
+        include_module: bool = True,
+        include_sample_flow: bool = False,
+        **kwargs,
+    ):
+        # Initialize parent class with kwargs
+        super().__init__(**kwargs)
+
+        # Initialize our own properties
+        self.locales = locales
+        self.include_module = include_module
+        self.include_sample_flow = include_sample_flow
 
 
 class MenuBot(Construct):
@@ -100,7 +111,7 @@ class MenuBot(Construct):
         include_sample_flow = props.include_sample_flow
 
         bot_name = f'{prefix}-{id}'
-        config = convert_to_lambda_config(menu_locales)
+        config_json = convert_to_lambda_config(menu_locales)
 
         # Create Lex handler
         self.lex_handler = create_lambda(
@@ -109,7 +120,7 @@ class MenuBot(Construct):
             os.path.join(os.path.dirname(__file__), 'lambdas', 'lex_handler'),
             function_name=f'{bot_name}-handler',
             description=f'Manages the {bot_name} lex conversation',
-            environment={'CONFIG': json.dumps(config)},
+            environment={'CONFIG': config_json},
         )
 
         # Allow lex handler to invoke custom action lambdas
@@ -124,21 +135,21 @@ class MenuBot(Construct):
 
         locales: List[SimpleLocale] = [
             SimpleLocale(
-                locale_id=locale['locale_id'],
-                voice_id=locale['voice_id'],
-                code_hook={
-                    'lambda_': self.lex_handler,
-                    'fulfillment': True,
-                    'dialog': True,
-                },
+                locale_id=locale.locale_id,
+                voice_id=locale.voice_id,
+                code_hook=CodeHook(
+                    lambda_=self.lex_handler,
+                    fulfillment=True,
+                    dialog=True,
+                ),
                 intents=[
                     SimpleIntent(
                         name='help',
-                        utterances=locale['help']['utterances'],
+                        utterances=locale.help.utterances,
                     ),
                     SimpleIntent(
                         name='hangUp',
-                        utterances=locale['hang_up']['utterances'],
+                        utterances=locale.hang_up.utterances,
                     ),
                     # Add intents from the menu
                     *[
@@ -180,7 +191,7 @@ class MenuBot(Construct):
             os.path.join(os.path.dirname(__file__), 'lambdas', 'connect_handler'),
             function_name=f'{bot_name}-connect-handler',
             description='Provides greeting information to Connect. Expects a lang parameter.',
-            environment={'CONFIG': json.dumps(config)},
+            environment={'CONFIG': config_json},
         )
 
         # Connect has a limited number of associations, since this is system lambda,
@@ -194,7 +205,7 @@ class MenuBot(Construct):
 
         # Optionally create Connect module and sample flow
         if include_module:
-            module_name = f'{id} Menu Module'
+            module_name = f'{bot_name} Menu Module'
             module_content = load_flow_content(
                 os.path.join(os.path.dirname(__file__), 'Module.json'),
                 {
@@ -218,8 +229,8 @@ class MenuBot(Construct):
                     os.path.join(os.path.dirname(__file__), 'SampleFlow.json'),
                     {
                         'ModuleId': module.ref,
-                        'Voice': default_locale['voice_id'],
-                        'Lang': default_locale['locale_id'],
+                        'Voice': default_locale.voice_id,
+                        'Lang': default_locale.locale_id,
                     },
                 )
 

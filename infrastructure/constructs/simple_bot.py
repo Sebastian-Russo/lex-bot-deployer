@@ -1,21 +1,17 @@
-from threading import local
-from typing import List, Optional, Dict, Any, Union, TypedDict
-from aws_cdk import aws_iam as iam
-from aws_cdk import aws_lambda as lambda_
-from aws_cdk import aws_lex as lex
-from aws_cdk.aws_lex import CfnBot, CfnBotAlias, CfnBotVersion
-from .lex_role import LexRoleProps
-from aws_cdk import CfnTag
-from aws_cdk import aws_logs as logs
-from aws_cdk import aws_s3 as s3
-from aws_cdk import Stack
-from constructs import Construct
-from .lex_role import LexRole
-from .associate_lex_bot import AssociateLexBot
-from ..lex_defaults import LexDefaults
-from ..utils.hash_code import hash_code
 from dataclasses import dataclass
 from typing import List, Optional
+
+from aws_cdk import CfnTag, Stack
+from aws_cdk import aws_iam as iam
+from aws_cdk import aws_lambda as lambda_
+from aws_cdk import aws_logs as logs
+from aws_cdk import aws_s3 as s3
+from aws_cdk.aws_lex import CfnBot, CfnBotAlias, CfnBotVersion
+from constructs import Construct
+
+from ..utils.hash_code import hash_code
+from .associate_lex_bot import AssociateLexBot
+from .lex_role import LexRole, LexRoleProps
 
 
 @dataclass
@@ -127,7 +123,11 @@ class SimpleIntent:
                 max_retries=3,
                 message_groups_list=[
                     CfnBot.MessageGroupProperty(
-                        {'message': {'plain_text_message': {'value': prompt}}}
+                        message=CfnBot.MessageProperty(
+                            plain_text_message=CfnBot.PlainTextMessageProperty(
+                                value=prompt
+                            )
+                        )
                     )
                 ],
             )
@@ -140,9 +140,15 @@ class SimpleIntent:
             return None
 
         return CfnBot.PostFulfillmentStatusSpecificationProperty(
-            success_response=CfnBot.PostFulfillmentStatusSpecificationProperty.SuccessResponseProperty(
+            success_response=CfnBot.ResponseSpecificationProperty(
                 message_groups_list=[
-                    {'message': {'plain_text_message': {'value': prompt}}}
+                    CfnBot.MessageGroupProperty(
+                        message=CfnBot.MessageProperty(
+                            plain_text_message=CfnBot.PlainTextMessageProperty(
+                                value=prompt
+                            )
+                        )
+                    )
                 ]
             )
         )

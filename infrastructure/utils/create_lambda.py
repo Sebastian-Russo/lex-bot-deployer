@@ -23,8 +23,8 @@ def create_lambda(
     return lambda_.Function(
         scope,
         id,
-        function_name,
-        description,
+        function_name=function_name,
+        description=description,
         runtime=lambda_.Runtime.PYTHON_3_9,
         handler='index.handler',
         code=lambda_.Code.from_asset(code_path),
