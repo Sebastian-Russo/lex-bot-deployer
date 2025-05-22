@@ -28,7 +28,7 @@ class SimpleSlot:
     name: str
     slot_type_name: str
     elicitation_messages: List[str]
-    description: Optional[str]
+    description: str = ""
     allow_interrupt: bool = False
     max_retries: int = 3
     required: bool = False

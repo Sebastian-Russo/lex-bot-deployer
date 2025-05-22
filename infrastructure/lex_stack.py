@@ -5,7 +5,7 @@ from constructs import Construct
 
 
 # Import bot implementations
-# from .bots.pin_auth_bot import PinAuthBot
+from .bots.pin_auth_bot import PinAuthBot
 from .bots.address_change_bot import AddressChangeBot
 from .bots.agent_busy_bot import AgentBusyBot
 # from .bots.menu_language_bot import MenuLanguageBot
@@ -71,24 +71,24 @@ class LexStack(Stack):
             #     log_group=log_group,
             #     audio_bucket=audio_bucket
             # ),
-            AddressChangeBot(
-                self,
-                'AddressChangeBot',
-                prefix=prefix,
-                connect_instance_arn=connect_instance_arn,
-                role=role,
-                log_group=log_group,
-                audio_bucket=audio_bucket
-            ),
-            # PinAuthBot(
+            # AddressChangeBot(
             #     self,
-            #     'PinAuthBot',
+            #     'AddressChangeBot',
             #     prefix=prefix,
             #     connect_instance_arn=connect_instance_arn,
             #     role=role,
             #     log_group=log_group,
             #     audio_bucket=audio_bucket
             # ),
+            PinAuthBot(
+                self,
+                'PinAuthBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket
+            ),
             # MenuLanguageBot(
             #     self,
             #     'MenuLanguageBot',

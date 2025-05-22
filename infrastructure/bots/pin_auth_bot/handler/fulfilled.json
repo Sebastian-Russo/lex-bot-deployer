@@ -1,0 +1,109 @@
+{
+  "inputMode": "Text",
+  "sessionId": "857240696749957",
+  "inputTranscript": "123",
+  "interpretations": [
+    {
+      "interpretationSource": "Lex",
+      "nluConfidence": 1,
+      "intent": {
+        "name": "AccountNumber",
+        "slots": {
+          "accountId": {
+            "value": {
+              "originalValue": "123",
+              "resolvedValues": [
+                "123"
+              ],
+              "interpretedValue": "123"
+            },
+            "shape": "Scalar"
+          },
+          "accountPin": {
+            "value": {
+              "originalValue": "123",
+              "resolvedValues": [
+                "123"
+              ],
+              "interpretedValue": "123"
+            },
+            "shape": "Scalar"
+          }
+        },
+        "state": "ReadyForFulfillment",
+        "confirmationState": "None"
+      }
+    },
+    {
+      "interpretationSource": "Lex",
+      "intent": {
+        "name": "FallbackIntent",
+        "slots": {},
+        "state": "ReadyForFulfillment",
+        "confirmationState": "None"
+      }
+    }
+  ],
+  "bot": {
+    "name": "lex-deploy-demo-py-pin-auth",
+    "version": "DRAFT",
+    "localeId": "en_US",
+    "id": "G20SWEK569",
+    "aliasId": "TSTALIASID",
+    "aliasName": "TestBotAlias"
+  },
+  "responseContentType": "text/plain; charset=utf-8",
+  "messageVersion": "1.0",
+  "sessionState": {
+    "originatingRequestId": "62113d43-dee0-4695-8a1b-d364dcd332ff",
+    "sessionAttributes": {},
+    "intent": {
+      "name": "AccountNumber",
+      "slots": {
+        "accountId": {
+          "value": {
+            "originalValue": "123",
+            "resolvedValues": [
+              "123"
+            ],
+            "interpretedValue": "123"
+          },
+          "shape": "Scalar"
+        },
+        "accountPin": {
+          "value": {
+            "originalValue": "123",
+            "resolvedValues": [
+              "123"
+            ],
+            "interpretedValue": "123"
+          },
+          "shape": "Scalar"
+        }
+      },
+      "state": "ReadyForFulfillment",
+      "confirmationState": "None"
+    }
+  },
+  "invocationSource": "FulfillmentCodeHook",
+  "transcriptions": [
+    {
+      "resolvedContext": {
+        "intent": "AccountNumber"
+      },
+      "resolvedSlots": {
+        "accountPin": {
+          "value": {
+            "originalValue": "123",
+            "resolvedValues": [
+              "123"
+            ]
+          },
+          "shape": "Scalar"
+        }
+      },
+      "transcriptionConfidence": 1,
+      "transcription": "123"
+    }
+  ]
+}

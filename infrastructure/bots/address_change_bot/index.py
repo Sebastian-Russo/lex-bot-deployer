@@ -1,8 +1,8 @@
 import os
 from constructs import Construct
-from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_iam as iam
 from ...constructs.simple_bot import SimpleBot, SimpleBotProps, SimpleLocale, SimpleIntent, SimpleSlot, CodeHook
+from ...utils.create_lambda import create_lambda
 from typing import Optional, List
 
 class AddressChangeBot(Construct):
@@ -21,8 +21,6 @@ class AddressChangeBot(Construct):
         connect_instance_arn: str,
         description: Optional[str] = None,
         role: Optional[iam.IRole] = None,
-        idle_session_ttl_in_seconds: Optional[int] = 300,
-        nlu_confidence_threshold: Optional[float] = 0.75,
         log_group=None,
         audio_bucket=None,
         **kwargs
@@ -30,15 +28,7 @@ class AddressChangeBot(Construct):
         super().__init__(scope, id, **kwargs)
 
         # Create the Lambda function
-        self.lambda_function = lambda_.Function(
-            self, 'Lambda',
-            runtime=lambda_.Runtime.PYTHON_3_9,
-            handler='index.handler',
-            code=lambda_.Code.from_asset(os.path.join(os.path.dirname(__file__), 'handler')),
-            environment={
-                'LOGGING_LEVEL': 'debug'
-            }
-        )
+        self.lambda_function = create_lambda(self, 'Lambda', os.path.join(os.path.dirname(__file__), 'handler'))
 
         locales: List[SimpleLocale]=[
                 SimpleLocale(
@@ -126,8 +116,8 @@ class AddressChangeBot(Construct):
                 name=f"{prefix}-address-change",
                 description=description,
                 role=role,
-                idle_session_ttl_in_seconds=idle_session_ttl_in_seconds,
-                nlu_confidence_threshold=nlu_confidence_threshold,
+                idle_session_ttl_in_seconds=300,
+                nlu_confidence_threshold=0.75,
                 log_group=log_group,
                 audio_bucket=audio_bucket,
                 connect_instance_arn=connect_instance_arn,

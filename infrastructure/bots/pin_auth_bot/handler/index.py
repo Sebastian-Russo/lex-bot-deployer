@@ -9,7 +9,9 @@ logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
 
 def handler(event: Dict[str, Any], context=None):
     """
-    Handler for address change Lambda fulfillment
+    Handler for PIN authentication Lambda
+
+    TODO - Do not log accountId and accountPin in production.
     """
 
     logger.debug('Event: %s', json.dumps(event, indent=2))
@@ -50,32 +52,23 @@ def handler(event: Dict[str, Any], context=None):
 
         return result
 
-    if intent_name != 'AddressChange':
+    if intent_name != 'AccountNumber':
         return failed_response(
-            f"Lambda doesn't know how to handle intent: {intent_name}"
+            f'Lambda doesnt know how to handle intent: {intent_name}'
         )
 
-    house_number = get_slot('houseNumber')
-    street_name = get_slot('streetName')
-    city = get_slot('city')
-    state = get_slot('state')
-    zip_code = get_slot('zipCode')
+    account_id = get_slot('accountId')
+    account_pin = get_slot('accountPin')
 
-    # TODO: Validate address & Update DB?
-    logger.debug(
-        'Address result: house_number=%s, street_name=%s, city=%s, state=%s, zip_code=%s',
-        house_number,
-        street_name,
-        city,
-        state,
-        zip_code,
-    )
+    if not account_id:
+        raise Exception('accountId is blank')
+    if not account_pin:
+        raise Exception('accountPin is blank')
 
-    # Since we can't use await in Python synchronously, we'll simulate with a simple value
-    is_success = True  # await Promise.resolve(true) in TypeScript
+    # TODO: Check DB to verify PIN?
+    logger.debug('result', {'accountId': account_id, 'accountPin': account_pin})
 
-    return (
-        fulfilled_response('Success')
-        if is_success
-        else failed_response('Validation or DB Update failed')
-    )
+    # Since we can't use await in Python synchronously, we'll simulate this with a simple value
+    is_valid = False  # TODO: Validate the PIN
+
+    return fulfilled_response('Success') if is_valid else failed_response('Invalid PIN')
