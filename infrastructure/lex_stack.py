@@ -3,12 +3,17 @@ from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
-# Import bot implementations
-# from .bots.menu_language_bot import MenuLanguageBot
-# from .bots.office_closed_bot import OfficeClosedBot
-from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
+from .bots.city_menu_bot import CityMenuBot
 
-# from .bots.city_menu_bot import CityMenuBot
+# Import bot implementations
+from .bots.menu_language_bot import MenuLanguageBot
+from .bots.office_closed_bot import OfficeClosedBot
+from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
+from .bots.yes_no_bot import YesNoBot
+from .bots.agent_busy_bot import AgentBusyBot
+from .bots.address_change_bot import AddressChangeBot
+from .bots.pin_auth_bot import PinAuthBot
+
 # Import constructs
 from .constructs.lex_role import LexRole
 from .constructs.throttled_deploy import throttled_deploy
@@ -57,60 +62,60 @@ class LexStack(Stack):
 
         # Create bots with throttled deployment
         bots = [
-            # YesNoBot(
-            #     self,
-            #     'YesNoBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket
-            # ),
-            # AgentBusyBot(
-            #     self,
-            #     'AgentBusyBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket
-            # ),
-            # AddressChangeBot(
-            #     self,
-            #     'AddressChangeBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket
-            # ),
-            # PinAuthBot(
-            #     self,
-            #     'PinAuthBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket,
-            # ),
-            # MenuLanguageBot(
-            #     self,
-            #     'MenuLanguageBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket,
-            # ),
-            # OfficeClosedBot(
-            #     self,
-            #     'OfficeClosedBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket,
-            # ),
+            YesNoBot(
+                self,
+                'YesNoBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
+            AgentBusyBot(
+                self,
+                'AgentBusyBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
+            AddressChangeBot(
+                self,
+                'AddressChangeBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
+            PinAuthBot(
+                self,
+                'PinAuthBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
+            MenuLanguageBot(
+                self,
+                'MenuLanguageBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
+            OfficeClosedBot(
+                self,
+                'OfficeClosedBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
             NonEmergencyMenuBot(
                 self,
                 'NonEmergencyMenuBot',
@@ -120,17 +125,17 @@ class LexStack(Stack):
                 log_group=log_group,
                 audio_bucket=audio_bucket,
             ),
-            # CityMenuBot(
-            #     self,
-            #     'CityMenuBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     city_hall_queue_arn=city_hall_queue_arn,
-            #     city_manager_flow_arn=city_manager_flow_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket
-            # )
+            CityMenuBot(
+                self,
+                'CityMenuBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                city_hall_queue_arn=city_hall_queue_arn,
+                city_manager_flow_arn=city_manager_flow_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
         ]
 
         # Apply throttled deployment to avoid API limits
