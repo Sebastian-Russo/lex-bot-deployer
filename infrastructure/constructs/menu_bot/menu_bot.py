@@ -118,7 +118,7 @@ class MenuBot(Construct):
             self,
             'LexHandler',
             os.path.join(os.path.dirname(__file__), 'lambdas', 'lex_handler'),
-            function_name=f'{bot_name}-handler',
+            function_name=f'{bot_name}-lex-handler',
             description=f'Manages the {bot_name} lex conversation',
             environment={'CONFIG': config_json},
         )

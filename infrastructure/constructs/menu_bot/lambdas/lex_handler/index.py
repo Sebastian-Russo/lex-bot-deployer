@@ -1,15 +1,14 @@
+import os
 import json
 import logging
-from typing import Dict, Any, Literal
+from typing import Any, Dict, Literal
+
 import boto3
 from botocore.exceptions import ClientError
-
-from interface import LambdaConfig  # Local file import
-from shared_utils.lex_helper import LexHelper  # From layer
 from shared_utils.utils.get_env_var import parse_env_var  # From layer
 
-# Configure logging
-logger = logging.getLogger(__name__)
+logger = logging.getLogger()
+logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
 
 
 class Attributes:
