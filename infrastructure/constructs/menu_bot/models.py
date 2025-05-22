@@ -1,53 +1,59 @@
-from typing import Dict, List, Optional, Literal, Union, TypedDict
+from typing import List, Literal, Mapping, Optional, Union
+
+from attr import dataclass
 
 # Define action types
 ActionType = Literal['PhoneTransfer', 'QueueTransfer', 'FlowTransfer', 'Prompt']
 
 
-class BaseAction(TypedDict, total=False):
+@dataclass
+class BaseAction:
     """Base action for menu items"""
 
     type: ActionType
 
     # Optional fields
-    custom_handler: Optional[str]  # Lambda ARN if provided
+    custom_handler: Optional[str] = None  # Lambda ARN if provided
 
 
-class TransferAction(BaseAction, total=False):
+@dataclass
+class TransferAction(BaseAction):
     """Base transfer action with optional prompts"""
 
-    pre_transfer_prompt: Optional[str]  # Prompt played before transfer
-    open_check_key: Optional[str]  # OMP integration key
-    voicemail_key: Optional[str]  # Voicemail key if call not answered
+    pre_transfer_prompt: Optional[str] = None  # Prompt played before transfer
 
 
+@dataclass(kw_only=True)
 class PhoneTransferAction(TransferAction):
     """Transfer to a phone number"""
 
-    type: Literal['PhoneTransfer']
+    type = 'PhoneTransfer'
     phone_number: str  # E.164 format phone number
 
 
+@dataclass(kw_only=True)
 class QueueTransferAction(TransferAction):
     """Transfer to a standard or agent queue"""
 
-    type: Literal['QueueTransfer']
+    type = 'QueueTransfer'
     queue_arn: str  # Amazon Connect Queue ARN
 
 
+@dataclass(kw_only=True)
 class FlowTransferAction(TransferAction):
     """Transfer to a contact flow"""
 
-    type: Literal['FlowTransfer']
+    type = 'FlowTransfer'
     contact_flow_arn: str  # Amazon Connect Contact Flow ARN
 
 
-class PromptAction(BaseAction, total=False):
+@dataclass(kw_only=True)
+class PromptAction(BaseAction):
     """Play a prompt to the user"""
 
-    type: Literal['Prompt']
+    type = 'Prompt'
     prompt: str
-    hang_up: Optional[bool]  # If true, hang up after the prompt
+    hang_up: bool = False
 
 
 # Union type for all possible actions
@@ -56,22 +62,26 @@ MenuAction = Union[
 ]
 
 
-class MenuItem(TypedDict, total=False):
+@dataclass
+class MenuItem:
     """Defines an IVR menu item (Associated with a lex intent)"""
 
     utterances: List[str]  # Phrases associated with this menu item
-    confirmation: Optional[str]  # Prompt to confirm the intent if provided
     action: MenuAction  # Action to take when selected
 
+    confirmation: Optional[str] = None  # Prompt to confirm the intent if provided
 
-class RequiredIntent(TypedDict):
+
+@dataclass
+class RequiredIntent:
     """Basic intent with utterances and a response"""
 
     utterances: List[str]
     response: str
 
 
-class MenuLocale(TypedDict):
+@dataclass
+class MenuLocale:
     """Locale configuration for the menu bot"""
 
     locale_id: str
@@ -80,10 +90,11 @@ class MenuLocale(TypedDict):
     more_prompt: str  # Prompt to ask if caller needs more help
     help: RequiredIntent  # Help intent
     hang_up: RequiredIntent  # Hang up intent (e.g., "no" to more_prompt)
-    menu: Dict[str, MenuItem]  # Menu items defining bot intents and actions
+    menu: Mapping[str, MenuItem]  # Menu items defining bot intents and actions
 
 
-class MenuBot(TypedDict):
+@dataclass
+class MenuBot:
     """Top-level menu bot configuration"""
 
     name: str

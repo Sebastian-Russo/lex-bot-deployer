@@ -4,11 +4,10 @@ from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
 # Import bot implementations
-from .bots.menu_language_bot import MenuLanguageBot
+# from .bots.menu_language_bot import MenuLanguageBot
+# from .bots.office_closed_bot import OfficeClosedBot
+from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
 
-from .bots.office_closed_bot import OfficeClosedBot
-
-# from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
 # from .bots.city_menu_bot import CityMenuBot
 # Import constructs
 from .constructs.lex_role import LexRole
@@ -103,24 +102,24 @@ class LexStack(Stack):
             #     log_group=log_group,
             #     audio_bucket=audio_bucket,
             # ),
-            OfficeClosedBot(
+            # OfficeClosedBot(
+            #     self,
+            #     'OfficeClosedBot',
+            #     prefix=prefix,
+            #     connect_instance_arn=connect_instance_arn,
+            #     role=role,
+            #     log_group=log_group,
+            #     audio_bucket=audio_bucket,
+            # ),
+            NonEmergencyMenuBot(
                 self,
-                'OfficeClosedBot',
+                'NonEmergencyMenuBot',
                 prefix=prefix,
                 connect_instance_arn=connect_instance_arn,
                 role=role,
                 log_group=log_group,
                 audio_bucket=audio_bucket,
             ),
-            # NonEmergencyMenuBot(
-            #     self,
-            #     'NonEmergencyMenuBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket
-            # ),
             # CityMenuBot(
             #     self,
             #     'CityMenuBot',

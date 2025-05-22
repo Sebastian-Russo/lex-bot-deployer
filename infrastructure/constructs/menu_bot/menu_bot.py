@@ -1,49 +1,87 @@
-import os
 import json
-from constructs import Construct
-from aws_cdk import aws_lambda as lambda_
-from aws_cdk import aws_iam as iam
+import os
+from typing import List, Optional
+
+from attr import dataclass
 from aws_cdk import aws_connect as connect
-from .lmbda.routing.interface import convert_to_lambda_config, unique_custom_handlers
-from ..simple_bot import SimpleBot
-from ..bot_props import BotProps
-from .models import MenuLocale
+from aws_cdk import aws_iam as iam
+from aws_cdk import aws_lambda as lambda_
+from constructs import Construct
+
+from ...utils.create_lambda import create_lambda
 from ...utils.load_flow_content import load_flow_content
-from typing import List, Optional, Dict, Any
-from aws_cdk.aws_lambda_python_alpha import PythonFunction
+from ..bot_props import BotProps
+from ..simple_bot import SimpleBot, SimpleBotProps, SimpleIntent, SimpleLocale
+from .models import MenuAction, MenuLocale, TransferAction
 
 
-def fulfillment_prompt(action: Dict[str, Any]) -> Optional[str]:
+def convert_to_lambda_config(locales: List[MenuLocale]) -> dict:
+    """
+    Convert menu locales to a configuration format for the Lambda function
+
+    Args:
+        locales: List of MenuLocale objects defining the bot configuration
+
+    Returns:
+        A dictionary configuration for the Lambda function
+    """
+    config = {}
+    for locale in locales:
+        config[locale.locale_id] = {
+            'langCode': locale.locale_id,
+            'greeting': locale.greeting,
+            'morePrompt': locale.more_prompt,
+            'help': locale.help.response,
+            'hangUp': locale.hang_up.response,
+        }
+
+        # Add menu items and their actions
+        for key, value in locale.menu.items():
+            config[locale.locale_id][key] = value.action
+
+    return config
+
+
+def unique_custom_handlers(locales: List[MenuLocale]) -> List[str]:
+    """
+    Extract unique custom handler ARNs from all locales
+
+    Args:
+        locales: List of MenuLocale objects
+
+    Returns:
+        List of unique custom handler ARNs
+    """
+    handlers = set()
+
+    for locale in locales:
+        for menu_item in locale.menu.values():
+            action = menu_item.action
+            if hasattr(action, 'custom_handler') and action.custom_handler:
+                handlers.add(action.custom_handler)
+
+    return list(handlers)
+
+
+def fulfillment_prompt(action: MenuAction) -> Optional[str]:
     """
     Fulfillment prompt is played after the intent fulfillment code-hook completes,
     but before the caller is returned to Connect.
     """
-    if action.get('pre_transfer_prompt') and isinstance(
-        action.get('pre_transfer_prompt'), str
-    ):
-        return action.get('pre_transfer_prompt')
+    if isinstance(action, TransferAction):
+        return action.pre_transfer_prompt
     return None
 
 
+@dataclass
 class MenuBotProps(BotProps):
     """
     Properties for the MenuBot construct
     """
 
-    def __init__(
-        self,
-        *,
-        locales: List[MenuLocale],
-        logging_level: str = 'debug',
-        include_module: bool = True,
-        include_sample_flow: bool = False,
-        **kwargs,
-    ):
-        super().__init__(**kwargs)
-        self.locales = locales
-        self.logging_level = logging_level
-        self.include_module = include_module
-        self.include_sample_flow = include_sample_flow
+    locales: List[MenuLocale]
+    include_module: bool = True
+    include_sample_flow: bool = False
 
 
 class MenuBot(Construct):
@@ -51,52 +89,31 @@ class MenuBot(Construct):
     Creates a Lex bot with a menu structure for handling basic customer interactions
     """
 
-    def __init__(self, scope: Construct, id: str, **kwargs):
+    def __init__(self, scope: Construct, id: str, *, props: MenuBotProps, **kwargs):
         # First, initialize the Construct base class with just scope and id
         super().__init__(scope, id)
 
-        # Then create props object with the additional parameters
-        props = MenuBotProps(**kwargs)
-
         prefix = props.prefix
-        locales = props.locales
+        menu_locales = props.locales
         connect_instance_arn = props.connect_instance_arn
-        logging_level = props.logging_level
         include_module = props.include_module
         include_sample_flow = props.include_sample_flow
 
         bot_name = f'{prefix}-{id}'
-        config = convert_to_lambda_config(locales)
-
-        # Add this in your MenuBot class (before creating the Lambda functions)
-        # This creates a shared layer with common dependencies
-        shared_layer = lambda_.LayerVersion(
-            self,
-            'SharedLayer',
-            code=lambda_.Code.from_asset(
-                os.path.join(os.path.dirname(__file__), 'lmbda', 'shared')
-            ),
-            compatible_runtimes=[lambda_.Runtime.PYTHON_3_9],
-            description='Shared utilities and helper functions',
-        )
+        config = convert_to_lambda_config(menu_locales)
 
         # Create Lex handler
-        self.lex_handler = PythonFunction(
+        self.lex_handler = create_lambda(
             self,
             'LexHandler',
+            os.path.join(os.path.dirname(__file__), 'lambdas', 'lex_handler'),
             function_name=f'{bot_name}-handler',
-            entry=os.path.join(os.path.dirname(__file__), 'lmbda', 'routing'),
-            index='lex_handler.py',
-            handler='handler',
-            runtime=lambda_.Runtime.PYTHON_3_9,
-            layers=[shared_layer],
-            environment={'LOGGING_LEVEL': logging_level, 'CONFIG': json.dumps(config)},
             description=f'Manages the {bot_name} lex conversation',
+            environment={'CONFIG': json.dumps(config)},
         )
 
         # Allow lex handler to invoke custom action lambdas
-        custom_handlers = unique_custom_handlers(locales)
-        for i, handler in enumerate(custom_handlers):
+        for i, handler in enumerate(unique_custom_handlers(menu_locales)):
             imported = lambda_.Function.from_function_attributes(
                 self,
                 f'CustomHandlerImport{i}',
@@ -105,64 +122,65 @@ class MenuBot(Construct):
             )
             imported.grant_invoke(self.lex_handler)
 
+        locales: List[SimpleLocale] = [
+            SimpleLocale(
+                locale_id=locale['locale_id'],
+                voice_id=locale['voice_id'],
+                code_hook={
+                    'lambda_': self.lex_handler,
+                    'fulfillment': True,
+                    'dialog': True,
+                },
+                intents=[
+                    SimpleIntent(
+                        name='help',
+                        utterances=locale['help']['utterances'],
+                    ),
+                    SimpleIntent(
+                        name='hangUp',
+                        utterances=locale['hang_up']['utterances'],
+                    ),
+                    # Add intents from the menu
+                    *[
+                        SimpleIntent(
+                            name=key,
+                            utterances=value.utterances,
+                            confirmation_prompt=value.confirmation,
+                            fulfillment_prompt=fulfillment_prompt(value.action),
+                        )
+                        for key, value in locale.menu.items()
+                    ],
+                ],
+            )
+            for locale in menu_locales
+        ]
+
         # Create the bot
         self.bot = SimpleBot(
             self,
             'Bot',
-            name=bot_name,
-            prefix=props.prefix,
-            description=props.description,
-            role=props.role,
-            idle_session_ttl_in_seconds=props.idle_session_ttl_in_seconds,
-            nlu_confidence_threshold=props.nlu_confidence_threshold,
-            log_group=props.log_group,
-            audio_bucket=props.audio_bucket,
-            connect_instance_arn=connect_instance_arn,
-            locales=[
-                {
-                    'locale_id': locale['locale_id'],
-                    'voice_id': locale['voice_id'],
-                    'code_hook': {
-                        'lambda_': self.lex_handler,
-                        'fulfillment': True,
-                        'dialog': True,
-                    },
-                    'intents': [
-                        {'name': 'help', 'utterances': locale['help']['utterances']},
-                        {
-                            'name': 'hangUp',
-                            'utterances': locale['hang_up']['utterances'],
-                        },
-                        # Add intents from the menu
-                        *[
-                            {
-                                'name': key,
-                                'utterances': value['utterances'],
-                                'confirmation_prompt': value.get('confirmation'),
-                                'fulfillment_prompt': fulfillment_prompt(
-                                    value['action']
-                                ),
-                            }
-                            for key, value in locale['menu'].items()
-                        ],
-                    ],
-                }
-                for locale in locales
-            ],
+            props=SimpleBotProps(
+                name=bot_name,
+                prefix=props.prefix,
+                description=props.description,
+                role=props.role,
+                idle_session_ttl_in_seconds=props.idle_session_ttl_in_seconds,
+                nlu_confidence_threshold=props.nlu_confidence_threshold,
+                log_group=props.log_group,
+                audio_bucket=props.audio_bucket,
+                connect_instance_arn=connect_instance_arn,
+                locales=locales,
+            ),
         )
 
         # Create Connect handler Lambda
-        connect_handler = PythonFunction(
+        connect_handler = create_lambda(
             self,
             'ConnectHandler',
-            function_name=f'{bot_name}-info',
-            entry=os.path.join(os.path.dirname(__file__), 'lmbda', 'get_greeting'),
-            index='connect_handler.py',
-            handler='handler',
-            runtime=lambda_.Runtime.PYTHON_3_9,
-            layers=[shared_layer],
-            environment={'LOGGING_LEVEL': logging_level, 'CONFIG': json.dumps(config)},
+            os.path.join(os.path.dirname(__file__), 'lambdas', 'connect_handler'),
+            function_name=f'{bot_name}-connect-handler',
             description='Provides greeting information to Connect. Expects a lang parameter.',
+            environment={'CONFIG': json.dumps(config)},
         )
 
         # Connect has a limited number of associations, since this is system lambda,
@@ -195,7 +213,7 @@ class MenuBot(Construct):
             )
 
             if include_sample_flow:
-                default_locale = locales[0]
+                default_locale = menu_locales[0]
                 flow_content = load_flow_content(
                     os.path.join(os.path.dirname(__file__), 'SampleFlow.json'),
                     {
