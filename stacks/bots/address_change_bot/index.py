@@ -60,6 +60,7 @@ class AddressChangeBot(Construct):
                                 'I want to change my address',
                                 'Change address',
                                 'Address change',
+                                'I moved'
                             ],
                             slots=[
                                 SimpleSlot(

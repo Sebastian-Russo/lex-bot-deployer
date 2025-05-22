@@ -1,6 +1,7 @@
 import json
 from aws_cdk import Token
 from constructs import Construct
+import dataclasses
 
 def safe_stringify(obj):
     """
@@ -12,23 +13,32 @@ def safe_stringify(obj):
     Returns:
         JSON string representation of the object
     """
-    def replacer(obj):
+    def replacer(val):
         """Function for handling non-serializable objects"""
-        if isinstance(obj, Construct):
+        if isinstance(val, Construct):
             # Don't serialize constructs
-            return f"construct-{obj.node.id}"
+            return f"construct-{val.node.id}"
 
-        if callable(obj):
+        if callable(val):
             # Don't serialize functions
             return "{function}"
 
-        if isinstance(obj, str) and Token.is_unresolved(obj):
+        if isinstance(val, str) and Token.is_unresolved(val):
             # Don't serialize unresolved tokens.
             # Token change with each synth, which breaks the hashing operation
             return "{token}"
 
+        if dataclasses.is_dataclass(val):
+            dict = dataclasses.asdict(val)
+            for key, value in dict.items():
+                dict[key] = replacer(value)
+            return dict
+
+        if isinstance(val, list):
+            return json.dumps(val, default=replacer)
+
         # For any other non-serializable objects
-        return str(obj)
+        return str(val)
 
     # Use only the default replacer function approach
-    return json.dumps(obj, default=replacer, indent=2)
+    return json.dumps(obj, default=replacer)

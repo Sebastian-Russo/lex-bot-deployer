@@ -1,6 +1,5 @@
 from .safe_stringify import safe_stringify
 
-# TODO: hash code did not change when I changed an utterance 
 def hash_code(input_obj):
     """
     Generate a hash code for an object
