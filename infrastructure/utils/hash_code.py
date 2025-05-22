@@ -1,5 +1,6 @@
 from .safe_stringify import safe_stringify
 
+
 def hash_code(input_obj):
     """
     Generate a hash code for an object

@@ -3,6 +3,7 @@ from aws_cdk import Token
 from constructs import Construct
 import dataclasses
 
+
 def safe_stringify(obj):
     """
     Stringify object which excludes constructs (circular reference)
@@ -13,20 +14,21 @@ def safe_stringify(obj):
     Returns:
         JSON string representation of the object
     """
+
     def replacer(val):
         """Function for handling non-serializable objects"""
         if isinstance(val, Construct):
             # Don't serialize constructs
-            return f"construct-{val.node.id}"
+            return f'construct-{val.node.id}'
 
         if callable(val):
             # Don't serialize functions
-            return "{function}"
+            return '{function}'
 
         if isinstance(val, str) and Token.is_unresolved(val):
             # Don't serialize unresolved tokens.
             # Token change with each synth, which breaks the hashing operation
-            return "{token}"
+            return '{token}'
 
         if dataclasses.is_dataclass(val):
             dict = dataclasses.asdict(val)

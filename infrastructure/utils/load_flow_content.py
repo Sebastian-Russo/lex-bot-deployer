@@ -2,6 +2,7 @@ import json
 import re
 from typing import Dict, Optional
 
+
 def load_flow_content(path: str, replacements: Optional[Dict[str, str]] = None) -> str:
     """
     Load the template file and handle replacements
@@ -24,11 +25,12 @@ def load_flow_content(path: str, replacements: Optional[Dict[str, str]] = None) 
 
     # Check for unreplaced ARNs
     arn_pattern = r'"arn:aws:.+:.+:[0-9]+:.+"'
-    arns = [arn for arn in re.findall(arn_pattern, flow_content)
-            if '${Token[' not in arn]
+    arns = [
+        arn for arn in re.findall(arn_pattern, flow_content) if '${Token[' not in arn
+    ]
 
     if arns:
-        raise Exception(f"Found unreplaced arns ({', '.join(arns)}) in path: {path}")
+        raise Exception(f'Found unreplaced arns ({", ".join(arns)}) in path: {path}')
 
     # Apply replacements if provided
     if replacements:
@@ -37,11 +39,14 @@ def load_flow_content(path: str, replacements: Optional[Dict[str, str]] = None) 
 
     # Check for unreplaced placeholders
     placeholder_pattern = r'\$\{.*\}'
-    placeholders = [p for p in re.findall(placeholder_pattern, flow_content)
-                   if '${Token[' not in p]
+    placeholders = [
+        p for p in re.findall(placeholder_pattern, flow_content) if '${Token[' not in p
+    ]
 
     if placeholders:
-        raise Exception(f"Found unreplaced placeholders ({', '.join(placeholders)}) in path: {path}")
+        raise Exception(
+            f'Found unreplaced placeholders ({", ".join(placeholders)}) in path: {path}'
+        )
 
     # Verify it parses and remove line breaks
     return json.dumps(json.loads(flow_content))

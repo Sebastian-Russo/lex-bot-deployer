@@ -11,25 +11,28 @@ from shared_utils.utils.get_env_var import parse_env_var  # From layer
 # Configure logging
 logger = logging.getLogger(__name__)
 
+
 class Attributes:
     """
     Attributes for the Lex session
     """
+
     def __init__(self):
         """
         Which action is associated with the intent
         """
-        self.action: str = ""
+        self.action: str = ''
 
         """
         Where to transfer the call
         """
-        self.destination: str = ""
+        self.destination: str = ''
 
         """
         Call should hang up after bot returns
         """
-        self.hang_up: Literal["true", "false"] = "false"
+        self.hang_up: Literal['true', 'false'] = 'false'
+
 
 class LexHandler:
     def __init__(self, config: LambdaConfig, lambda_client=None):
@@ -44,7 +47,7 @@ class LexHandler:
             return cls(parse_env_var('CONFIG'), boto3.client('lambda'))
         except ValueError:
             # During CDK synth/deploy, provide a dummy config
-            print("INFO: Using dummy config for CDK deployment")
+            print('INFO: Using dummy config for CDK deployment')
             try:
                 # Try to create a client with a default region
                 return cls({}, boto3.client('lambda', region_name='us-east-1'))
@@ -63,7 +66,9 @@ class LexHandler:
             elif event.get('invocationSource') == 'FulfillmentCodeHook':
                 return self.fulfillment_hook()
             else:
-                raise ValueError(f"Unknown invocation source {event.get('invocationSource')}")
+                raise ValueError(
+                    f'Unknown invocation source {event.get("invocationSource")}'
+                )
         except Exception as error:
             logger.error('Unhandled Error: %s', str(error))
             return self.helper.failed_response('Unhandled lambda error')
@@ -88,14 +93,14 @@ class LexHandler:
 
         locale = self.config.get(locale_id)
         if not locale:
-            raise ValueError(f"Locale {locale_id} is not configured")
+            raise ValueError(f'Locale {locale_id} is not configured')
 
         if intent_name == 'help' or intent_name == 'FallbackIntent':
             return helper.elicit_intent(locale.get('help', ''))
         if intent_name == 'hangUp':
             return helper.fulfilled_response(locale.get('hang_up', ''))
         if intent_name not in locale:
-            raise ValueError(f"Intent {intent_name} not found in config")
+            raise ValueError(f'Intent {intent_name} not found in config')
 
         action = locale[intent_name]
         if action.get('customHandler'):
@@ -107,7 +112,7 @@ class LexHandler:
             if action.get('hangUp'):
                 helper.session_attributes['hangUp'] = 'true'
                 return helper.fulfilled_response(action.get('prompt', ''))
-            message = f"{action.get('prompt', '')}... {locale.get('more_prompt', '')}"
+            message = f'{action.get("prompt", "")}... {locale.get("more_prompt", "")}'
             return helper.elicit_intent(message)
         elif action.get('type') == 'PhoneTransfer':
             helper.session_attributes['destination'] = action.get('phoneNumber', '')
@@ -119,24 +124,32 @@ class LexHandler:
             helper.session_attributes['destination'] = action.get('contactFlowArn', '')
             return helper.fulfilled_response()
 
-        return helper.failed_response(f"Unknown action type: {json.dumps(action, indent=2)}")
+        return helper.failed_response(
+            f'Unknown action type: {json.dumps(action, indent=2)}'
+        )
 
     def custom_handler(self, lambda_arn: str) -> None:
-        function_name = lambda_arn.split('function/')[-1] if 'function/' in lambda_arn else lambda_arn
-        logger.info("Passing event to custom handler: %s", function_name)
+        function_name = (
+            lambda_arn.split('function/')[-1]
+            if 'function/' in lambda_arn
+            else lambda_arn
+        )
+        logger.info('Passing event to custom handler: %s', function_name)
 
         try:
             response = self.lambda_client.invoke(
                 FunctionName=function_name,
                 InvocationType='Event',
-                Payload=json.dumps(self.event)
+                Payload=json.dumps(self.event),
             )
             logger.info('Lambda invocation response: %s', response)
         except ClientError as e:
-            logger.error("Error invoking Lambda function: %s", str(e))
+            logger.error('Error invoking Lambda function: %s', str(e))
 
 
 # Create handler instance
 handler_class = LexHandler.create()
+
+
 def handler(event, context):
     return handler_class.handler(event, context)

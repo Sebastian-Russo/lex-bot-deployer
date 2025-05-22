@@ -1,9 +1,17 @@
 import os
 from constructs import Construct
 from aws_cdk import aws_iam as iam
-from ...constructs.simple_bot import SimpleBot, SimpleBotProps, SimpleLocale, SimpleIntent, SimpleSlot, CodeHook
+from ...constructs.simple_bot import (
+    SimpleBot,
+    SimpleBotProps,
+    SimpleLocale,
+    SimpleIntent,
+    SimpleSlot,
+    CodeHook,
+)
 from ...utils.create_lambda import create_lambda
 from typing import Optional, List
+
 
 class AddressChangeBot(Construct):
     """
@@ -23,97 +31,101 @@ class AddressChangeBot(Construct):
         role: Optional[iam.IRole] = None,
         log_group=None,
         audio_bucket=None,
-        **kwargs
+        **kwargs,
     ):
         super().__init__(scope, id, **kwargs)
 
         # Create the Lambda function
-        self.lambda_function = create_lambda(self, 'Lambda', os.path.join(os.path.dirname(__file__), 'handler'))
+        self.lambda_function = create_lambda(
+            self, 'Lambda', os.path.join(os.path.dirname(__file__), 'handler')
+        )
 
-        locales: List[SimpleLocale]=[
-                SimpleLocale(
-                    locale_id="en_US",
-                    voice_id="Joanna",
-                    code_hook=CodeHook(
-                        lambda_= self.lambda_function,
-                        fulfillment=True
+        locales: List[SimpleLocale] = [
+            SimpleLocale(
+                locale_id='en_US',
+                voice_id='Joanna',
+                code_hook=CodeHook(lambda_=self.lambda_function, fulfillment=True),
+                intents=[
+                    SimpleIntent(
+                        name='AddressChange',
+                        utterances=[
+                            'I would like to update my address to {houseNumber} {streetName}',
+                            'I would like to update my address to {houseNumber} {streetName} {city} {state} {zipCode}',
+                            'I would like to update to my new address',
+                            'I would like to update address',
+                            'Update address',
+                            'I want to change my address',
+                            'Change address',
+                            'Address change',
+                            'I moved',
+                        ],
+                        slots=[
+                            SimpleSlot(
+                                name='houseNumber',
+                                description='House or building number',
+                                slot_type_name='AMAZON.Number',
+                                elicitation_messages=['What is the house or building?'],
+                                max_retries=3,
+                                allow_interrupt=True,
+                                required=True,
+                            ),
+                            SimpleSlot(
+                                name='streetName',
+                                description='Street name',
+                                slot_type_name='AMAZON.AlphaNumeric',
+                                elicitation_messages=['What is the street name?'],
+                                max_retries=3,
+                                allow_interrupt=True,
+                                required=True,
+                            ),
+                            SimpleSlot(
+                                name='city',
+                                description='City',
+                                slot_type_name='AMAZON.City',
+                                elicitation_messages=['What is the city?'],
+                                max_retries=3,
+                                allow_interrupt=True,
+                                required=True,
+                            ),
+                            SimpleSlot(
+                                name='state',
+                                description='State',
+                                slot_type_name='AMAZON.State',
+                                elicitation_messages=['What is the state?'],
+                                max_retries=3,
+                                allow_interrupt=True,
+                                required=True,
+                            ),
+                            SimpleSlot(
+                                name='zipCode',
+                                description='Zip code',
+                                slot_type_name='AMAZON.Number',
+                                elicitation_messages=['What is the zip code?'],
+                                max_retries=3,
+                                allow_interrupt=True,
+                                required=True,
+                            ),
+                        ],
                     ),
-                    intents=[
-                        SimpleIntent(
-                            name="AddressChange",
-                            utterances=[
-                                'I would like to update my address to {houseNumber} {streetName}',
-                                'I would like to update my address to {houseNumber} {streetName} {city} {state} {zipCode}',
-                                'I would like to update to my new address',
-                                'I would like to update address',
-                                'Update address',
-                                'I want to change my address',
-                                'Change address',
-                                'Address change',
-                                'I moved'
-                            ],
-                            slots=[
-                                SimpleSlot(
-                                    name="houseNumber",
-                                    description="House or building number",
-                                    slot_type_name="AMAZON.Number",
-                                    elicitation_messages=["What is the house or building?"],
-                                    max_retries=3,
-                                    allow_interrupt=True,
-                                    required=True
-                                ),
-                                SimpleSlot(
-                                    name="streetName",
-                                    description="Street name",
-                                    slot_type_name="AMAZON.AlphaNumeric",
-                                    elicitation_messages=["What is the street name?"],
-                                    max_retries=3,
-                                    allow_interrupt=True,
-                                    required=True
-                                ),
-                                SimpleSlot(
-                                    name="city",
-                                    description="City",
-                                    slot_type_name="AMAZON.City",
-                                    elicitation_messages=["What is the city?"],
-                                    max_retries=3,
-                                    allow_interrupt=True,
-                                    required=True
-                                ),
-                                SimpleSlot(
-                                    name="state",
-                                    description="State",
-                                    slot_type_name="AMAZON.State",
-                                    elicitation_messages=["What is the state?"],
-                                    max_retries=3,
-                                    allow_interrupt=True,
-                                    required=True
-                                ),
-                                SimpleSlot(
-                                    name="zipCode",
-                                    description="Zip code",
-                                    slot_type_name="AMAZON.Number",
-                                    elicitation_messages=["What is the zip code?"],
-                                    max_retries=3,
-                                    allow_interrupt=True,
-                                    required=True
-                                )
-                            ]
-                        ),
-                        SimpleIntent(
-                            name="Agent",
-                            utterances=['Speak to an agent', 'Talk to a human', 'I need human help']
-                        ),
-                        # The FallbackIntent will be added automatically by SimpleBot
-                    ]
-                )
+                    SimpleIntent(
+                        name='Agent',
+                        utterances=[
+                            'Speak to an agent',
+                            'Talk to a human',
+                            'I need human help',
+                        ],
+                    ),
+                    # The FallbackIntent will be added automatically by SimpleBot
+                ],
+            )
         ]
 
         # Create bot
         self.bot = SimpleBot(
-            self, 'Bot',
+            self,
+            'Bot',
             props=SimpleBotProps(
-                name=f"{prefix}-address-change",
+                name=f'{prefix}-address-change',
                 description=description,
                 role=role,
                 idle_session_ttl_in_seconds=300,
@@ -122,9 +134,5 @@ class AddressChangeBot(Construct):
                 audio_bucket=audio_bucket,
                 connect_instance_arn=connect_instance_arn,
                 locales=locales,
-            )       
+            ),
         )
-
-
-
-

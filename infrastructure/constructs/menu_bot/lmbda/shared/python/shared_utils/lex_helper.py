@@ -3,6 +3,7 @@ from typing import Dict, Any, Optional, TypeVar, Generic, List, Union
 # Create a generic type for attributes
 TAttributes = TypeVar('TAttributes', bound=Dict[str, str])
 
+
 class LexHelper(Generic[TAttributes]):
     """
     Simplifies lex responses
@@ -11,14 +12,19 @@ class LexHelper(Generic[TAttributes]):
 
     def __init__(self, event: Dict[str, Any]):
         self.event = event
-        self.session_attributes = event.get('sessionState', {}).get('sessionAttributes', {})
+        self.session_attributes = event.get('sessionState', {}).get(
+            'sessionAttributes', {}
+        )
 
     @property
     def interpretation(self):
         """
         Returns the first interpretation
         """
-        if not self.event.get('interpretations') or len(self.event['interpretations']) == 0:
+        if (
+            not self.event.get('interpretations')
+            or len(self.event['interpretations']) == 0
+        ):
             raise Exception('No interpretations found')
         return self.event['interpretations'][0]
 
@@ -42,55 +48,43 @@ class LexHelper(Generic[TAttributes]):
 
     def delegate(self) -> Dict[str, Any]:
         return {
-            "sessionState": {
-                "intent": self.event.get('sessionState', {}).get('intent', {}),
-                "sessionAttributes": self.session_attributes,
-                "dialogAction": {
-                    "type": "Delegate"
-                }
+            'sessionState': {
+                'intent': self.event.get('sessionState', {}).get('intent', {}),
+                'sessionAttributes': self.session_attributes,
+                'dialogAction': {'type': 'Delegate'},
             }
         }
 
     def elicit_intent(self, message: str) -> Dict[str, Any]:
         return {
-            "sessionState": {
-                "sessionAttributes": self.session_attributes,
-                "dialogAction": {
-                    "type": "ElicitIntent"
-                }
+            'sessionState': {
+                'sessionAttributes': self.session_attributes,
+                'dialogAction': {'type': 'ElicitIntent'},
             },
-            "messages": [
-                {
-                    "contentType": "PlainText",
-                    "content": message
-                }
-            ]
+            'messages': [{'contentType': 'PlainText', 'content': message}],
         }
 
     def elicit_slot(self, slot_to_elicit: str, message: str) -> Dict[str, Any]:
         return {
-            "sessionState": {
-                "sessionAttributes": self.session_attributes,
-                "dialogAction": {
-                    "type": "ElicitSlot",
-                    "slotToElicit": slot_to_elicit,
-                    "slotElicitationStyle": "Default"
+            'sessionState': {
+                'sessionAttributes': self.session_attributes,
+                'dialogAction': {
+                    'type': 'ElicitSlot',
+                    'slotToElicit': slot_to_elicit,
+                    'slotElicitationStyle': 'Default',
                 },
-                "intent": {
-                    "state": "InProgress",
-                    "name": self.intent_name,
-                    "slots": self.slots
-                }
+                'intent': {
+                    'state': 'InProgress',
+                    'name': self.intent_name,
+                    'slots': self.slots,
+                },
             },
-            "messages": [
-                {
-                    "contentType": "PlainText",
-                    "content": message
-                }
-            ]
+            'messages': [{'contentType': 'PlainText', 'content': message}],
         }
 
-    def fulfilled_response(self, message: Optional[str] = None, ssml: bool = False) -> Dict[str, Any]:
+    def fulfilled_response(
+        self, message: Optional[str] = None, ssml: bool = False
+    ) -> Dict[str, Any]:
         """
         Let Lex know that the intent is fulfilled
         Args:
@@ -98,46 +92,34 @@ class LexHelper(Generic[TAttributes]):
             ssml: Whether to use SSML for content type
         """
         result = {
-            "sessionState": {
-                "sessionAttributes": self.session_attributes,
-                "dialogAction": {
-                    "type": "Close"
+            'sessionState': {
+                'sessionAttributes': self.session_attributes,
+                'dialogAction': {'type': 'Close'},
+                'intent': {
+                    'slots': self.slots,
+                    'name': self.intent_name,
+                    'state': 'Fulfilled',
                 },
-                "intent": {
-                    "slots": self.slots,
-                    "name": self.intent_name,
-                    "state": "Fulfilled"
-                }
             }
         }
 
         if message:
-            result["messages"] = [
-                {
-                    "contentType": "SSML" if ssml else "PlainText",
-                    "content": message
-                }
+            result['messages'] = [
+                {'contentType': 'SSML' if ssml else 'PlainText', 'content': message}
             ]
 
         return result
 
     def failed_response(self, message: str) -> Dict[str, Any]:
         return {
-            "sessionState": {
-                "sessionAttributes": self.session_attributes,
-                "dialogAction": {
-                    "type": "Close"
+            'sessionState': {
+                'sessionAttributes': self.session_attributes,
+                'dialogAction': {'type': 'Close'},
+                'intent': {
+                    'slots': self.slots,
+                    'name': self.intent_name,
+                    'state': 'Failed',
                 },
-                "intent": {
-                    "slots": self.slots,
-                    "name": self.intent_name,
-                    "state": "Failed"
-                }
             },
-            "messages": [
-                {
-                    "contentType": "PlainText",
-                    "content": message
-                }
-            ]
+            'messages': [{'contentType': 'PlainText', 'content': message}],
         }

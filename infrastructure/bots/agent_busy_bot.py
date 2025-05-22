@@ -1,7 +1,13 @@
 from constructs import Construct
-from ..constructs.simple_bot import SimpleBot, SimpleBotProps, SimpleLocale, SimpleIntent
+from ..constructs.simple_bot import (
+    SimpleBot,
+    SimpleBotProps,
+    SimpleLocale,
+    SimpleIntent,
+)
 from aws_cdk import aws_iam as iam
 from typing import Optional, List
+
 
 class AgentBusyBot(SimpleBot):
     def __init__(
@@ -17,66 +23,77 @@ class AgentBusyBot(SimpleBot):
         nlu_confidence_threshold: Optional[float] = 0.75,
         log_group=None,
         audio_bucket=None,
-        **kwargs
+        **kwargs,
     ):
         # Create locales with Agent/Callback/Voicemail intents
-        locales: List[SimpleLocale]=[
+        locales: List[SimpleLocale] = [
             SimpleLocale(
-                locale_id="en_US",
-                voice_id="Joanna",
+                locale_id='en_US',
+                voice_id='Joanna',
                 intents=[
                     SimpleIntent(
-                        name="Agent",
-                        utterances=["agent", "representative", "can I speak to an agent?", "help", "can I talk to someone?"],
-                    ),
-                    SimpleIntent(
-                        name="Callback",
-                        utterances=["request a callback", "callback", "I would like a call back", "Could you call me back?"],
-                    ),
-                    SimpleIntent(
-                        name="Voicemail",
+                        name='Agent',
                         utterances=[
-                            "leave a voicemail",
-                            "voicemail",
-                            "leave a message",
-                            "message",
-                            "I would like to leave a message",
-                            "I want to leave a voicemail"
+                            'agent',
+                            'representative',
+                            'can I speak to an agent?',
+                            'help',
+                            'can I talk to someone?',
+                        ],
+                    ),
+                    SimpleIntent(
+                        name='Callback',
+                        utterances=[
+                            'request a callback',
+                            'callback',
+                            'I would like a call back',
+                            'Could you call me back?',
+                        ],
+                    ),
+                    SimpleIntent(
+                        name='Voicemail',
+                        utterances=[
+                            'leave a voicemail',
+                            'voicemail',
+                            'leave a message',
+                            'message',
+                            'I would like to leave a message',
+                            'I want to leave a voicemail',
                         ],
                     ),
                 ],
             ),
             SimpleLocale(
-                locale_id="es_US",
-                voice_id="Lupe",
+                locale_id='es_US',
+                voice_id='Lupe',
                 intents=[
                     SimpleIntent(
-                        name="Agent",
+                        name='Agent',
                         utterances=[
-                            "agente",
-                            "representante",
-                            "puedo hablar con un agente?",
-                            "ayuda",
-                            "puedo hablar con alguien?",
+                            'agente',
+                            'representante',
+                            'puedo hablar con un agente?',
+                            'ayuda',
+                            'puedo hablar con alguien?',
                         ],
                     ),
                     SimpleIntent(
-                        name="Callback",
+                        name='Callback',
                         utterances=[
-                            "solicitar una devolucion de llamada",
-                            "llamar de vuelta",
-                            "me gustaria que me devolvieran la llamada",
-                            "podrias devolverme la llamada?",
+                            'solicitar una devolucion de llamada',
+                            'llamar de vuelta',
+                            'me gustaria que me devolvieran la llamada',
+                            'podrias devolverme la llamada?',
                         ],
                     ),
                     SimpleIntent(
-                        name="Voicemail",
+                        name='Voicemail',
                         utterances=[
-                            "dejar un mensaje de voz",
-                            "mensaje de voz",
-                            "deja un mensaje",
-                            "mensaje",
-                            "me gustaria dejar un mensaje",
+                            'dejar un mensaje de voz',
+                            'mensaje de voz',
+                            'deja un mensaje',
+                            'mensaje',
+                            'me gustaria dejar un mensaje',
                         ],
                     ),
                 ],
@@ -84,9 +101,10 @@ class AgentBusyBot(SimpleBot):
         ]
 
         super().__init__(
-            scope, id,
+            scope,
+            id,
             props=SimpleBotProps(
-                name=f"{prefix}-agent-busy",
+                name=f'{prefix}-agent-busy',
                 description=description,
                 locales=locales,
                 role=role,
@@ -96,5 +114,5 @@ class AgentBusyBot(SimpleBot):
                 audio_bucket=audio_bucket,
                 connect_instance_arn=connect_instance_arn,
             ),
-            **kwargs
+            **kwargs,
         )

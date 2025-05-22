@@ -5,6 +5,7 @@ from aws_cdk import aws_iam as iam
 
 from ..constructs.simple_bot import SimpleBot
 
+
 class MenuLanguageBot(SimpleBot):
     def __init__(
         self,
@@ -19,36 +20,30 @@ class MenuLanguageBot(SimpleBot):
         nlu_confidence_threshold: Optional[float] = None,
         log_group=None,
         audio_bucket=None,
-        **kwargs
+        **kwargs,
     ):
         # Create locales with language selection intents
-        locales=[
+        locales = [
             {
-                "locale_id": "en_US",
-                "voice_id": "Joanna",
-                "intents": [
+                'locale_id': 'en_US',
+                'voice_id': 'Joanna',
+                'intents': [
                     {
-                        "name": "Spanish",
-                        "utterances": ["spanish", "espanol", "espanyol"]
+                        'name': 'Spanish',
+                        'utterances': ['spanish', 'espanol', 'espanyol'],
                     },
-                    {
-                        "name": "English",
-                        "utterances": ["english", "ingles"]
-                    },
+                    {'name': 'English', 'utterances': ['english', 'ingles']},
                 ],
             },
             {
-                "locale_id": "es_US",
-                "voice_id": "Lupe",
-                "intents": [
+                'locale_id': 'es_US',
+                'voice_id': 'Lupe',
+                'intents': [
                     {
-                        "name": "Spanish",
-                        "utterances": ["spanish", "espanol", "espanyol"]
+                        'name': 'Spanish',
+                        'utterances': ['spanish', 'espanol', 'espanyol'],
                     },
-                    {
-                        "name": "English",
-                        "utterances": ["english", "ingles"]
-                    },
+                    {'name': 'English', 'utterances': ['english', 'ingles']},
                 ],
             },
         ]
@@ -60,8 +55,9 @@ class MenuLanguageBot(SimpleBot):
             nlu_confidence_threshold = 0.75  # Default to 75%
 
         super().__init__(
-            scope, id,
-            name=f"{prefix}-menu-language",
+            scope,
+            id,
+            name=f'{prefix}-menu-language',
             description=description,
             locales=locales,
             role=role,
@@ -70,5 +66,5 @@ class MenuLanguageBot(SimpleBot):
             log_group=log_group,
             audio_bucket=audio_bucket,
             connect_instance_arn=connect_instance_arn,
-            **kwargs
+            **kwargs,
         )

@@ -17,18 +17,20 @@ from ..utils.hash_code import hash_code
 from dataclasses import dataclass
 from typing import List, Optional
 
+
 @dataclass
 class CodeHook:
     lambda_: lambda_.IFunction
     dialog: bool = False
     fulfillment: bool = False
 
+
 @dataclass
 class SimpleSlot:
     name: str
     slot_type_name: str
     elicitation_messages: List[str]
-    description: str = ""
+    description: str = ''
     allow_interrupt: bool = False
     max_retries: int = 3
     required: bool = False
@@ -39,7 +41,7 @@ class SimpleSlot:
             description=self.description,
             slot_type_name=self.slot_type_name,  # Match TypeScript input format
             value_elicitation_setting=CfnBot.SlotValueElicitationSettingProperty(
-                slot_constraint="Required" if self.required else "Optional",
+                slot_constraint='Required' if self.required else 'Optional',
                 prompt_specification=CfnBot.PromptSpecificationProperty(
                     allow_interrupt=self.allow_interrupt,
                     max_retries=self.max_retries,
@@ -47,15 +49,17 @@ class SimpleSlot:
                         CfnBot.MessageGroupProperty(
                             message=CfnBot.MessageProperty(
                                 plain_text_message=CfnBot.PlainTextMessageProperty(
-                                    value=message                                
+                                    value=message
                                 )
                             )
-                        ) for message in self.elicitation_messages
-                    ]
-                )
-            )
+                        )
+                        for message in self.elicitation_messages
+                    ],
+                ),
+            ),
         )
-    
+
+
 @dataclass
 class SimpleSlotTypeValue:
     sample_value: str
@@ -78,15 +82,14 @@ class SimpleIntent:
     confirmation_prompt: Optional[str] = None
     fulfillment_prompt: Optional[str] = None
 
-    def to_cdk_intent(self, dialog_code_hook: bool, fulfillment_code_hook: bool) -> CfnBot.IntentProperty:
+    def to_cdk_intent(
+        self, dialog_code_hook: bool, fulfillment_code_hook: bool
+    ) -> CfnBot.IntentProperty:
         # Prepare slot priorities if slots exist
         slot_priorities: List[CfnBot.SlotPriorityProperty] = None
         if self.slots:
             slot_priorities = [
-                {
-                    "slotName": slot.name,
-                    "priority": idx + 1
-                }
+                {'slotName': slot.name, 'priority': idx + 1}
                 for idx, slot in enumerate(self.slots)
             ]
 
@@ -97,19 +100,25 @@ class SimpleIntent:
         return CfnBot.IntentProperty(
             name=self.name,
             dialog_code_hook={
-                "enabled": dialog_code_hook,
+                'enabled': dialog_code_hook,
             },
-            fulfillment_code_hook= {
-                "enabled": fulfillment_code_hook,
-                "fulfillment_updates_specification": self._post_fulfillment_prompt(self.fulfillment_prompt),
+            fulfillment_code_hook={
+                'enabled': fulfillment_code_hook,
+                'fulfillment_updates_specification': self._post_fulfillment_prompt(
+                    self.fulfillment_prompt
+                ),
             },
-            sample_utterances= [{"utterance": u} for u in self.utterances],
-            slot_priorities= slot_priorities,
-            slots = slots,
-            intent_confirmation_setting= self._transform_intent_confirmation(self.confirmation_prompt),
+            sample_utterances=[{'utterance': u} for u in self.utterances],
+            slot_priorities=slot_priorities,
+            slots=slots,
+            intent_confirmation_setting=self._transform_intent_confirmation(
+                self.confirmation_prompt
+            ),
         )
 
-    def _transform_intent_confirmation(self, prompt: str) -> Optional[CfnBot.IntentConfirmationSettingProperty]:
+    def _transform_intent_confirmation(
+        self, prompt: str
+    ) -> Optional[CfnBot.IntentConfirmationSettingProperty]:
         if not prompt:
             return None
 
@@ -117,32 +126,27 @@ class SimpleIntent:
             prompt_specification=CfnBot.PromptSpecificationProperty(
                 max_retries=3,
                 message_groups_list=[
-                    CfnBot.MessageGroupProperty({
-                        "message": {
-                            "plain_text_message": {
-                                "value": prompt
-                            }
-                        }
-                    })
-                ]
+                    CfnBot.MessageGroupProperty(
+                        {'message': {'plain_text_message': {'value': prompt}}}
+                    )
+                ],
             )
-        )    
+        )
 
-    def _post_fulfillment_prompt(self, prompt: str) -> Optional[CfnBot.PostFulfillmentStatusSpecificationProperty]:
+    def _post_fulfillment_prompt(
+        self, prompt: str
+    ) -> Optional[CfnBot.PostFulfillmentStatusSpecificationProperty]:
         if not prompt:
             return None
 
         return CfnBot.PostFulfillmentStatusSpecificationProperty(
             success_response=CfnBot.PostFulfillmentStatusSpecificationProperty.SuccessResponseProperty(
-                message_groups_list=[{
-                    "message": {
-                        "plain_text_message": {
-                            "value": prompt
-                        }
-                    }
-                }]  
+                message_groups_list=[
+                    {'message': {'plain_text_message': {'value': prompt}}}
+                ]
             )
         )
+
 
 @dataclass
 class SimpleLocale:
@@ -154,66 +158,70 @@ class SimpleLocale:
     slot_types: Optional[List[SimpleSlotType]] = None
     code_hook: Optional[CodeHook] = None
 
-    def to_cdk_locale(self, nlu_confidence_threshold: float) -> CfnBot.BotLocaleProperty:
+    def to_cdk_locale(
+        self, nlu_confidence_threshold: float
+    ) -> CfnBot.BotLocaleProperty:
         dialog_code_hook = False
         fulfillment_code_hook = False
         if self.code_hook:
             dialog_code_hook = self.code_hook.dialog
             fulfillment_code_hook = self.code_hook.fulfillment
 
-        intents = [intent.to_cdk_intent(dialog_code_hook, fulfillment_code_hook) for intent in self.intents]
-        intents.append(CfnBot.IntentProperty(
-            name='FallbackIntent',
-            dialog_code_hook={ "enabled": dialog_code_hook },
-            fulfillment_code_hook={ "enabled": fulfillment_code_hook },
-            parent_intent_signature= 'AMAZON.FallbackIntent',
-        ))
+        intents = [
+            intent.to_cdk_intent(dialog_code_hook, fulfillment_code_hook)
+            for intent in self.intents
+        ]
+        intents.append(
+            CfnBot.IntentProperty(
+                name='FallbackIntent',
+                dialog_code_hook={'enabled': dialog_code_hook},
+                fulfillment_code_hook={'enabled': fulfillment_code_hook},
+                parent_intent_signature='AMAZON.FallbackIntent',
+            )
+        )
 
         return CfnBot.BotLocaleProperty(
             locale_id=self.locale_id,
             nlu_confidence_threshold=nlu_confidence_threshold,
-            voice_settings={
-                "voiceId": self.voice_id,
-                "engine": self.engine
-            },
+            voice_settings={'voiceId': self.voice_id, 'engine': self.engine},
             # TODO: Implement Slot Types
             intents=intents,
         )
 
     def to_cdk_bot_locale_setting(self) -> CfnBot.BotAliasLocaleSettingsItemProperty:
         code_hook_specification = None
-        if(self.code_hook is not None):
+        if self.code_hook is not None:
             code_hook_specification = CfnBot.CodeHookSpecificationProperty(
                 lambda_code_hook={
                     'codeHookInterfaceVersion': '1.0',
-                    'lambdaArn': self.code_hook.lambda_.function_arn
+                    'lambdaArn': self.code_hook.lambda_.function_arn,
                 }
             )
 
         return CfnBot.BotAliasLocaleSettingsItemProperty(
             bot_alias_locale_setting=CfnBot.BotAliasLocaleSettingsProperty(
-                enabled=True,
-                code_hook_specification=code_hook_specification
+                enabled=True, code_hook_specification=code_hook_specification
             ),
-            locale_id=self.locale_id
+            locale_id=self.locale_id,
         )
 
-    def to_cdk_bot_alias_locale_setting(self) -> CfnBotAlias.BotAliasLocaleSettingsItemProperty:
+    def to_cdk_bot_alias_locale_setting(
+        self,
+    ) -> CfnBotAlias.BotAliasLocaleSettingsItemProperty:
         code_hook_specification = None
-        if(self.code_hook is not None):
+        if self.code_hook is not None:
             code_hook_specification = CfnBotAlias.CodeHookSpecificationProperty(
                 lambda_code_hook={
                     'codeHookInterfaceVersion': '1.0',
-                    'lambdaArn': self.code_hook.lambda_.function_arn
+                    'lambdaArn': self.code_hook.lambda_.function_arn,
                 }
             )
 
         return CfnBotAlias.BotAliasLocaleSettingsItemProperty(
             bot_alias_locale_setting=CfnBotAlias.BotAliasLocaleSettingsProperty(
-                enabled=True,
-                code_hook_specification=code_hook_specification
+                enabled=True, code_hook_specification=code_hook_specification
             ),
-            locale_id=self.locale_id
+            locale_id=self.locale_id,
         )
 
 
@@ -229,6 +237,7 @@ class SimpleBotProps:
     idle_session_ttl_in_seconds: int = 300
     nlu_confidence_threshold: float = 0.75
     prefix: Optional[str] = None
+
 
 class SimpleBot(Construct):
     """
@@ -247,74 +256,83 @@ class SimpleBot(Construct):
         self.region = Stack.of(scope).region
         self.account = Stack.of(scope).account
 
-
         # Create or use provided role
         self.role = props.role or LexRole(
-            self, 'Role',
+            self,
+            'Role',
             props=LexRoleProps(
-                lex_log_group_name=props.log_group.log_group_name if props.log_group else None
-            )
+                lex_log_group_name=props.log_group.log_group_name
+                if props.log_group
+                else None
+            ),
         )
 
         # Create bot
         self.bot = CfnBot(
-            self, 'Bot',
+            self,
+            'Bot',
             name=props.name[:50],  # Trim to 50 characters
             description=props.description,
             idle_session_ttl_in_seconds=props.idle_session_ttl_in_seconds,
             role_arn=self.role.role_arn,
-            data_privacy={"ChildDirected": False},
-            bot_locales=[l.to_cdk_locale(props.nlu_confidence_threshold) for l in props.locales],
+            data_privacy={'ChildDirected': False},
+            bot_locales=[
+                l.to_cdk_locale(props.nlu_confidence_threshold) for l in props.locales
+            ],
             auto_build_bot_locales=False,  # Turned off to prevent build issues
             test_bot_alias_settings=CfnBot.TestBotAliasSettingsProperty(
-                bot_alias_locale_settings=[locale.to_cdk_bot_locale_setting() for locale in props.locales],
+                bot_alias_locale_settings=[
+                    locale.to_cdk_bot_locale_setting() for locale in props.locales
+                ],
                 # conversation_log_settings=self.conversation_log_settings('TestBotAlias')
             ),
             # Add the required tag for Connect permissions
-            bot_tags=[
-                CfnTag(
-                    key="AmazonConnectEnabled",
-                    value="True"
-                )
-            ]
+            bot_tags=[CfnTag(key='AmazonConnectEnabled', value='True')],
         )
 
         # Create version with hash to ensure updates
         self.version = CfnBotVersion(
-            self, version_id,
+            self,
+            version_id,
             bot_id=self.bot.attr_id,
-            bot_version_locale_specification=[CfnBotVersion.BotVersionLocaleSpecificationProperty(
-                locale_id=locale.locale_id,
-                bot_version_locale_details=CfnBotVersion.BotVersionLocaleDetailsProperty(
-                    source_bot_version="DRAFT"
+            bot_version_locale_specification=[
+                CfnBotVersion.BotVersionLocaleSpecificationProperty(
+                    locale_id=locale.locale_id,
+                    bot_version_locale_details=CfnBotVersion.BotVersionLocaleDetailsProperty(
+                        source_bot_version='DRAFT'
+                    ),
                 )
-            ) for locale in props.locales]
+                for locale in props.locales
+            ],
         )
 
         # Create alias
         self.alias = CfnBotAlias(
-            self, 'Alias',
+            self,
+            'Alias',
             bot_alias_name='live',
             bot_id=self.bot.attr_id,
-            bot_alias_locale_settings=[locale.to_cdk_bot_alias_locale_setting() for locale in props.locales],
+            bot_alias_locale_settings=[
+                locale.to_cdk_bot_alias_locale_setting() for locale in props.locales
+            ],
             bot_version=self.version.attr_bot_version,
-            conversation_log_settings=self.conversation_log_settings('live')
+            conversation_log_settings=self.conversation_log_settings('live'),
         )
 
         # Add permissions for lambdas
         for locale in props.locales:
             if locale.code_hook and locale.code_hook.lambda_:
                 locale.code_hook.lambda_.add_permission(
-                    f"lex-lambda-invoke-{locale.locale_id}",
-                    principal=iam.ServicePrincipal("lexv2.amazonaws.com"),
-                    action="lambda:InvokeFunction",
-                    source_arn=f"arn:aws:lex:{self.region}:{self.account}:bot/{self.bot.attr_id}/*/*"
+                    f'lex-lambda-invoke-{locale.locale_id}',
+                    principal=iam.ServicePrincipal('lexv2.amazonaws.com'),
+                    action='lambda:InvokeFunction',
+                    source_arn=f'arn:aws:lex:{self.region}:{self.account}:bot/{self.bot.attr_id}/*/*',
                 )
                 locale.code_hook.lambda_.add_permission(
-                    f"lex-lambda-invoke-{locale.locale_id}-alias",
-                    principal=iam.ServicePrincipal("lexv2.amazonaws.com"),
-                    action="lambda:InvokeFunction",
-                    source_arn=f"arn:aws:lex:{self.region}:{self.account}:bot-alias/{self.bot.attr_id}/*"
+                    f'lex-lambda-invoke-{locale.locale_id}-alias',
+                    principal=iam.ServicePrincipal('lexv2.amazonaws.com'),
+                    action='lambda:InvokeFunction',
+                    source_arn=f'arn:aws:lex:{self.region}:{self.account}:bot-alias/{self.bot.attr_id}/*',
                 )
 
         # Associate with connect if provided
@@ -323,41 +341,48 @@ class SimpleBot(Construct):
             for locale in props.locales:
                 if locale.code_hook and locale.code_hook.lambda_:
                     locale.code_hook.lambda_.add_permission(
-                        f"connect-lambda-invoke-{locale.locale_id}",
-                        principal=iam.ServicePrincipal("connect.amazonaws.com"),
-                        action="lambda:InvokeFunction",
-                        source_arn=f"arn:aws:connect:{self.region}:{self.account}:instance/*"
+                        f'connect-lambda-invoke-{locale.locale_id}',
+                        principal=iam.ServicePrincipal('connect.amazonaws.com'),
+                        action='lambda:InvokeFunction',
+                        source_arn=f'arn:aws:connect:{self.region}:{self.account}:instance/*',
                     )
 
             AssociateLexBot(
-                self, 'Association',
+                self,
+                'Association',
                 connect_instance_arn=props.connect_instance_arn,
-                alias=self.alias
+                alias=self.alias,
             )
 
     # Rest of the class remains unchanged
     def _transform_slot_type(self, slot_type: dict) -> dict:
         """Transform slot type dictionary to Lex format"""
         return {
-            "name": slot_type.get("name"),
-            "description": slot_type.get("description"),
-            "slot_type_name": slot_type.get("name"),
-            "external_source_setting": {
-                "grammar_slot_type_setting": {
-                    "source": slot_type.get("grammar_source")
-                }
-            } if slot_type.get("grammar_source") else None,
-            "slot_type_values": [{"sample_value": {"value": v}} for v in slot_type.get("values", [])],
-            "value_selection_setting": {
-                "resolution_strategy": slot_type.get("resolution_strategy", "OriginalValue")
+            'name': slot_type.get('name'),
+            'description': slot_type.get('description'),
+            'slot_type_name': slot_type.get('name'),
+            'external_source_setting': {
+                'grammar_slot_type_setting': {'source': slot_type.get('grammar_source')}
             }
+            if slot_type.get('grammar_source')
+            else None,
+            'slot_type_values': [
+                {'sample_value': {'value': v}} for v in slot_type.get('values', [])
+            ],
+            'value_selection_setting': {
+                'resolution_strategy': slot_type.get(
+                    'resolution_strategy', 'OriginalValue'
+                )
+            },
         }
 
-    def conversation_log_settings(self, alias_name: str) -> Optional[CfnBotAlias.ConversationLogSettingsProperty]:
+    def conversation_log_settings(
+        self, alias_name: str
+    ) -> Optional[CfnBotAlias.ConversationLogSettingsProperty]:
         """Return conversation log settings"""
 
         log_group = self.props.log_group
-        audio_bucket =self.props.audio_bucket
+        audio_bucket = self.props.audio_bucket
 
         # Return None if neither log group nor audio bucket exists
         if not log_group and not audio_bucket:
@@ -374,10 +399,10 @@ class SimpleBot(Construct):
                     destination=CfnBotAlias.AudioLogDestinationProperty(
                         s3_bucket=CfnBotAlias.S3BucketLogDestinationProperty(
                             s3_bucket_arn=audio_bucket.bucket_arn,
-                            log_prefix=f"{self.props.name}/{alias_name}",
+                            log_prefix=f'{self.props.name}/{alias_name}',
                             # "kmsKeyArn": "todo"
                         )
-                    )
+                    ),
                 )
             ]
 
@@ -389,9 +414,9 @@ class SimpleBot(Construct):
                     destination=CfnBotAlias.TextLogDestinationProperty(
                         cloud_watch=CfnBotAlias.CloudWatchLogGroupLogDestinationProperty(
                             cloud_watch_log_group_arn=log_group.log_group_arn,
-                            log_prefix=f"{self.props.name}/{alias_name}"
+                            log_prefix=f'{self.props.name}/{alias_name}',
                         )
-                    )
+                    ),
                 )
             ]
 

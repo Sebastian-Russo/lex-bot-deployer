@@ -4,9 +4,11 @@ from aws_cdk import aws_s3 as s3
 from dataclasses import dataclass
 from typing import Optional
 
+
 @dataclass
 class BotProps:
     """Properties for creating a Lex bot"""
+
     prefix: str
     connect_instance_arn: str
     description: Optional[str] = None
