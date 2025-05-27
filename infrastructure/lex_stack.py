@@ -3,16 +3,18 @@ from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
 
+from .bots.address_change_bot import AddressChangeBot
+from .bots.agent_busy_bot import AgentBusyBot
 from .bots.city_menu_bot import CityMenuBot
 
 # Import bot implementations
 from .bots.menu_language_bot import MenuLanguageBot
-from .bots.office_closed_bot import OfficeClosedBot
 from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
-from .bots.yes_no_bot import YesNoBot
-from .bots.agent_busy_bot import AgentBusyBot
-from .bots.address_change_bot import AddressChangeBot
+from .bots.office_closed_bot import OfficeClosedBot
 from .bots.pin_auth_bot import PinAuthBot
+from .bots.yes_no_bot import YesNoBot
+from .bots_ssa.reprint_1099_bot.lex.reprint_1099_bot import Reprint1099Bot
+from .bots_ssa.ssa_menu_bot import SSAMenuBot
 
 # Import constructs
 from .constructs.lex_role import LexRole
@@ -132,6 +134,27 @@ class LexStack(Stack):
                 connect_instance_arn=connect_instance_arn,
                 city_hall_queue_arn=city_hall_queue_arn,
                 city_manager_flow_arn=city_manager_flow_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
+            SSAMenuBot(
+                self,
+                'SSAMenuBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                city_hall_queue_arn=city_hall_queue_arn,
+                city_manager_flow_arn=city_manager_flow_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
+            Reprint1099Bot(
+                self,
+                'Reprint1099Bot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                city_hall_queue_arn=city_hall_queue_arn,  # Used for agent transfers
                 role=role,
                 log_group=log_group,
                 audio_bucket=audio_bucket,

@@ -2,16 +2,15 @@ from typing import List, Optional
 
 from constructs import Construct
 
-from ..bots.utterances.help_utterances import HELP_UTTERANCES
 from ..constructs.menu_bot.menu_bot import MenuBot, MenuBotProps, MenuLocale
 from ..constructs.menu_bot.models import (
     FlowTransferAction,
     MenuItem,
-    PhoneTransferAction,
     PromptAction,
     QueueTransferAction,
     RequiredIntent,
 )
+from .utterances.help_utterances import HELP_UTTERANCES
 
 # Saul Goodman Hotline
 TEST_NUMBER = '+16462259369'
@@ -48,7 +47,7 @@ class SSAMenuBot(Construct):
                 more_prompt='How can I help you today?',
                 help=RequiredIntent(
                     utterances=HELP_UTTERANCES,
-                    response='You can say things like, "I would like to speak to someone at City Hall", "I would like to speak to the city manager", or "I have a problem with my bill".',
+                    response='You can say things like, "I would like to print a 1099", "I would like a pamphlet", "I want to enroll in medicare","I need to replace my social security card", "I need to change my address", "I want to verify my benefit payments", "I want to change my personal information".',
                 ),
                 hang_up=RequiredIntent(
                     utterances=[
@@ -178,99 +177,13 @@ class SSAMenuBot(Construct):
                         ),
                     ),
                 },
-            ),
-            MenuLocale(
-                locale_id='es_US',
-                voice_id='Lupe',
-                greeting='Gracias por llamar al menú de la ciudad. ¿Cómo puedo ayudarte?',
-                more_prompt='¿Hay algo más en lo que pueda ayudarte?',
-                help=RequiredIntent(
-                    utterances=HELP_UTTERANCES,
-                    response='Puedes decir cosas como, "Me gustaría hablar con alguien en el ayuntamiento", "Me gustaría hablar con el alcalde", o "Tengo un problema con mi factura".',
-                ),
-                hang_up=RequiredIntent(
-                    utterances=[
-                        'No',
-                        'No necesito nada más',
-                        'He terminado',
-                        'Adiós',
-                    ],
-                    response='De acuerdo, gracias por llamar y que tengas un buen día!',
-                ),
-                menu={
-                    'CITY_HALL': MenuItem(
-                        utterances=[
-                            'Me gustaría hablar con alguien en el ayuntamiento.',
-                            'Conéctame con el ayuntamiento',
-                            'Oficina de los comisionados de la ciudad',
-                        ],
-                        confirmation='¿Entiendo que necesitas hablar con el ayuntamiento, ¿es correcto?',
-                        action=QueueTransferAction(
-                            type='QueueTransfer',
-                            queue_arn=city_hall_queue_arn,
-                        ),
-                    ),
-                    'CITY_MANAGER': MenuItem(
-                        utterances=[
-                            'Me gustaría hablar con el alcalde.',
-                            'Conéctame con la oficina del alcalde',
-                        ],
-                        confirmation='¿Entiendo que necesitas hablar con el alcalde, ¿es correcto?',
-                        action=FlowTransferAction(
-                            type='FlowTransfer',
-                            contact_flow_arn=city_manager_flow_arn,
-                            pre_transfer_prompt='Ok, pero en su lugar te transferiré al flujo de demostración.',
-                        ),
-                    ),
-                    'PUBLIC_DEFENDER': MenuItem(
-                        utterances=[
-                            'Necesito un defensor público.',
-                            'Me detuvieron',
-                            'No quiero ir a la cárcel',
-                            'Le dije al policía que eso no era mío!',
-                        ],
-                        confirmation='¿Entiendo que necesitas un defensor público, ¿es correcto?',
-                        action=PhoneTransferAction(
-                            type='PhoneTransfer',
-                            phone_number=TEST_NUMBER,
-                            pre_transfer_prompt='Ok, te estoy conectando con Saul Goodman y Asociados.',
-                        ),
-                    ),
-                    'ACCOUNTING': MenuItem(
-                        utterances=[
-                            'Tengo un problema con mi factura.',
-                            'Conéctame con contabilidad',
-                            'Quiero hablar con Bob en contabilidad',
-                            'Quiero hablar con Bob',
-                        ],
-                        confirmation='¿Entiendo que necesitas hablar con Bob en contabilidad, ¿es correcto?',
-                        action=QueueTransferAction(
-                            type='QueueTransfer',
-                            queue_arn=f'{connect_instance_arn}/queue/bob@example.com',
-                            pre_transfer_prompt='Ok, te estoy conectando con Bob.',
-                        ),
-                    ),
-                    'MISC': MenuItem(
-                        utterances=[
-                            '¿Qué tiempo hace?',
-                            '¿Puedes ponerme música?',
-                            'Juguemos un juego',
-                            'Cuéntame un chiste',
-                        ],
-                        action=PromptAction(
-                            type='Prompt',
-                            prompt='No soy Alexa, por favor no me hagas preguntas frívolas. Adiós.',
-                            hang_up=True,
-                        ),
-                    ),
-                },
-            ),
+            )
         ]
 
         # Create the menu bot
         MenuBot(
             self,
-            'City',
+            'SSAMenuBot',
             props=MenuBotProps(
                 prefix=prefix,
                 connect_instance_arn=connect_instance_arn,
