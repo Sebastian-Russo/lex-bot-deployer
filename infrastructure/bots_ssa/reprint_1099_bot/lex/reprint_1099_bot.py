@@ -83,6 +83,7 @@ class Reprint1099Bot(Construct):
             SimpleLocale(
                 locale_id='en_US',
                 voice_id='Joanna',
+                slot_types=slot_types,
                 code_hook=CodeHook(
                     lambda_=self.lambda_handler,
                     dialog=True,
@@ -93,16 +94,17 @@ class Reprint1099Bot(Construct):
                     SimpleIntent(
                         name='Start1099Request',
                         utterances=[
-                            'I would like to print a 1099',
-                            'I need to print a 1099',
-                            'I need a 1099',
-                            'I want my 1099',
-                            'Can I get my 1099',
+                            'I would like to print a 10 99',
+                            'I need to print a 10 99',
+                            'I need a 10 99',
+                            'I want my 10 99',
+                            'Can I get my 10 99',
+                            '10 99',
                         ],
                         slots=[
                             SimpleSlot(
                                 name='birthDateInRange',
-                                slot_type_name='YesNoType',
+                                slot_type_name='AMAZON.AlphaNumeric',
                                 elicitation_messages=[
                                     'Are you born between December 15 and January 31?'
                                 ],
@@ -124,11 +126,11 @@ class Reprint1099Bot(Construct):
                         slots=[
                             SimpleSlot(
                                 name='wantCurrentYear',
-                                slot_type_name='YesNoType',
+                                slot_type_name='AMAZON.AlphaNumeric',
                                 elicitation_messages=[
-                                    'Are you calling to get a replacement 1099 for the 2024 tax year?'
+                                    'Are you calling to get a replacement 10 99 for the 2024 tax year?'
                                 ],
-                                description='Whether user wants current year 1099',
+                                description='Whether user wants current year 10 99',
                                 required=True,
                                 max_retries=2,
                             )
@@ -146,8 +148,8 @@ class Reprint1099Bot(Construct):
                         ],
                         slots=[
                             SimpleSlot(
-                                name='privacyChoice',
-                                slot_type_name='PrivacyChoiceType',
+                                name='privacy_agreement',
+                                slot_type_name='AMAZON.AlphaNumeric',
                                 elicitation_messages=[
                                     'To hear detailed information about the Privacy Act or Paper Reduction Act, say more information. Otherwise, say continue.'
                                 ],
@@ -171,7 +173,7 @@ class Reprint1099Bot(Construct):
                         slots=[
                             SimpleSlot(
                                 name='agreeToTerms',
-                                slot_type_name='YesNoType',
+                                slot_type_name='AMAZON.AlphaNumeric',
                                 elicitation_messages=[
                                     'Please note that any person who makes a false representation in an effort to alter or obtain information from the Social Security Administration may be punished by a fine or imprisonment or both. Do you understand and agree to these terms?'
                                 ],
@@ -201,7 +203,7 @@ class Reprint1099Bot(Construct):
                         slots=[
                             SimpleSlot(
                                 name='ssnDigit1',
-                                slot_type_name='SSNDigitType',
+                                slot_type_name='AMAZON.Number',
                                 elicitation_messages=[
                                     'Please say your Social Security number one digit at a time. What is the first digit?'
                                 ],
@@ -211,7 +213,7 @@ class Reprint1099Bot(Construct):
                             ),
                             SimpleSlot(
                                 name='ssnDigit2',
-                                slot_type_name='SSNDigitType',
+                                slot_type_name='AMAZON.Number',
                                 elicitation_messages=['What is the second digit?'],
                                 description='Second digit of SSN',
                                 required=True,
@@ -219,7 +221,7 @@ class Reprint1099Bot(Construct):
                             ),
                             SimpleSlot(
                                 name='ssnDigit3',
-                                slot_type_name='SSNDigitType',
+                                slot_type_name='AMAZON.Number',
                                 elicitation_messages=['What is the third digit?'],
                                 description='Third digit of SSN',
                                 required=True,
@@ -263,16 +265,16 @@ class Reprint1099Bot(Construct):
             #         SimpleIntent(
             #             name='Start1099Request',
             #             utterances=[
-            #                 'Me gustaría imprimir un 1099',
-            #                 'Necesito imprimir un 1099',
-            #                 'Necesito un 1099',
-            #                 'Quiero mi 1099',
-            #                 'Puedo obtener mi 1099',
+            #                 'Me gustaría imprimir un 10 99',
+            #                 'Necesito imprimir un 10 99',
+            #                 'Necesito un 10 99',
+            #                 'Quiero mi 10 99',
+            #                 'Puedo obtener mi 10 99',
             #             ],
             #             slots=[
             #                 SimpleSlot(
             #                     name='birthDateInRange',
-            #                     slot_type_name='YesNoType',
+            #                     slot_type_name='AMAZON.AlphaNumeric',
             #                     elicitation_messages=[
             #                         '¿Naciste entre el 15 de diciembre y el 31 de enero?'
             #                     ],

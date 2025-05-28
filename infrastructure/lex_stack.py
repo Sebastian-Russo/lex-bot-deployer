@@ -38,6 +38,7 @@ class LexStack(Stack):
         connect_instance_arn: str,
         city_hall_queue_arn: str,
         city_manager_flow_arn: str,
+        reprint_1099_flow_arn: str,
         env=None,
         **kwargs,
     ):
@@ -144,7 +145,7 @@ class LexStack(Stack):
                 prefix=prefix,
                 connect_instance_arn=connect_instance_arn,
                 city_hall_queue_arn=city_hall_queue_arn,
-                city_manager_flow_arn=city_manager_flow_arn,
+                reprint_1099_flow_arn=reprint_1099_flow_arn,
                 role=role,
                 log_group=log_group,
                 audio_bucket=audio_bucket,
@@ -154,7 +155,7 @@ class LexStack(Stack):
                 'Reprint1099Bot',
                 prefix=prefix,
                 connect_instance_arn=connect_instance_arn,
-                city_hall_queue_arn=city_hall_queue_arn,  # Used for agent transfers
+                city_hall_queue_arn=city_hall_queue_arn,
                 role=role,
                 log_group=log_group,
                 audio_bucket=audio_bucket,

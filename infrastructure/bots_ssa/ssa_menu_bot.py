@@ -30,7 +30,9 @@ class SSAMenuBot(Construct):
         prefix: str,
         connect_instance_arn: str,
         city_hall_queue_arn: str,
-        city_manager_flow_arn: str,
+        reprint_1099_flow_arn: str,  # city manager contact flow arn, allows menu bot to route caller to different flow
+        # create new flow that calls reprint bot
+        #
         description: Optional[str] = None,
         role=None,
         log_group=None,
@@ -66,9 +68,9 @@ class SSAMenuBot(Construct):
                             'I need a 1099.',
                         ],
                         confirmation='It sounds like you need to print a 1099, is that correct?',
-                        action=QueueTransferAction(
-                            type='QueueTransfer',
-                            queue_arn=city_hall_queue_arn,
+                        action=FlowTransferAction(
+                            type='FlowTransfer',
+                            contact_flow_arn=reprint_1099_flow_arn,  # Todo: once transfered to flow, get customer input can prompt user (for which year, etc)
                         ),
                     ),
                     'PAMPHLETS': MenuItem(
@@ -87,7 +89,7 @@ class SSAMenuBot(Construct):
                         confirmation='You would like a pamphlet, is that correct?',
                         action=FlowTransferAction(
                             type='FlowTransfer',
-                            contact_flow_arn=city_manager_flow_arn,
+                            contact_flow_arn=reprint_1099_flow_arn,
                             pre_transfer_prompt='Ok, pamphelts. One moment. THere are several pamphlet topics to choose from. I will take you through the list and you can select the ones you want. To skip ahead to the next topic, just say skip topic. To hear it again, say repeat that. And at any time, you can say, I am done. Now, to get started, do you want the pamphlet on Understanding Social Security?',
                         ),
                     ),
