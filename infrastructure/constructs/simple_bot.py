@@ -285,7 +285,7 @@ class SimpleBot(Construct):
             bot_locales=[
                 l.to_cdk_locale(props.nlu_confidence_threshold) for l in props.locales
             ],
-            auto_build_bot_locales=False,  # Turned off to prevent build issues
+            auto_build_bot_locales=True,  # Turned off to prevent build issues
             test_bot_alias_settings=CfnBot.TestBotAliasSettingsProperty(
                 bot_alias_locale_settings=[
                     locale.to_cdk_bot_locale_setting() for locale in props.locales

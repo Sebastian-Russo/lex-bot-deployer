@@ -1,0 +1,96 @@
+{
+  "Version": "2019-10-30",
+  "StartAction": "33785a26-f484-44ad-8023-77db67350931",
+  "Metadata": {
+    "entryPointPosition": {
+      "x": 40,
+      "y": 40
+    },
+    "ActionMetadata": {
+      "5f14b4d9-b6d3-40b1-8391-28f47e6134a7": {
+        "position": {
+          "x": 1009.6,
+          "y": 70.4
+        }
+      },
+      "39c3999a-f696-4046-a194-21e5c7ce451d": {
+        "position": {
+          "x": 636,
+          "y": 252.8
+        }
+      },
+      "33785a26-f484-44ad-8023-77db67350931": {
+        "position": {
+          "x": 368,
+          "y": 33.6
+        },
+        "parameters": {
+          "LexV2Bot": {
+            "AliasArn": {
+              "displayName": "live",
+              "useLexBotDropdown": true,
+              "lexV2BotName": "lex-deploy-demo-py-yes-no"
+            }
+          }
+        },
+        "useLexBotDropdown": true,
+        "lexV2BotName": "lex-deploy-demo-py-yes-no",
+        "lexV2BotAliasName": "live",
+        "conditionMetadata": []
+      }
+    },
+    "Annotations": [],
+    "name": "lex-deploy-demo-py-Reprint1099Bot Flow",
+    "description": "",
+    "type": "contactFlow",
+    "status": "published",
+    "hash": {}
+  },
+  "Actions": [
+    {
+      "Parameters": {},
+      "Identifier": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
+      "Type": "DisconnectParticipant",
+      "Transitions": {}
+    },
+    {
+      "Parameters": {
+        "Text": "Error connecting to bot. "
+      },
+      "Identifier": "39c3999a-f696-4046-a194-21e5c7ce451d",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
+        "Errors": [
+          {
+            "NextAction": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "Okay, Benefit statement or 10 99. One monent. Did you know you can view, print, save or request a copy of your s s a 10 99 or ss a 10 42 by going online and using your s s a account. Go to w w w dot social security dot g o v and select Sign in. \nDo you have a foreign Address?",
+        "LexV2Bot": {
+          "AliasArn": "arn:aws:lex:us-east-1:308665918648:bot-alias/14INWLQAIH/TDRBDYI2YS"
+        }
+      },
+      "Identifier": "33785a26-f484-44ad-8023-77db67350931",
+      "Type": "ConnectParticipantWithLexBot",
+      "Transitions": {
+        "NextAction": "39c3999a-f696-4046-a194-21e5c7ce451d",
+        "Errors": [
+          {
+            "NextAction": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
+            "ErrorType": "NoMatchingCondition"
+          },
+          {
+            "NextAction": "39c3999a-f696-4046-a194-21e5c7ce451d",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    }
+  ]
+}

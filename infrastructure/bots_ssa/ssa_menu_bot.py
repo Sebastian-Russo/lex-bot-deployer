@@ -49,7 +49,7 @@ class SSAMenuBot(Construct):
                 more_prompt='How can I help you today?',
                 help=RequiredIntent(
                     utterances=HELP_UTTERANCES,
-                    response='You can say things like, "I would like to print a 1099", "I would like a pamphlet", "I want to enroll in medicare","I need to replace my social security card", "I need to change my address", "I want to verify my benefit payments", "I want to change my personal information".',
+                    response='You can say things like, "I would like to print a 10 99", "I would like a pamphlet", "I want to enroll in medicare","I need to replace my social security card", "I need to change my address", "I want to verify my benefit payments", "I want to change my personal information".',
                 ),
                 hang_up=RequiredIntent(
                     utterances=[
@@ -63,14 +63,14 @@ class SSAMenuBot(Construct):
                 menu={
                     '1099_REPRINT': MenuItem(
                         utterances=[
-                            'I would like to print a 1099.',
-                            'I need to print a 1099.',
-                            'I need a 1099.',
+                            'I would like to print a 10 99.',
+                            'I need to print a 10 99.',
+                            'I need a 10 99.',
                         ],
-                        confirmation='It sounds like you need to print a 1099, is that correct?',
+                        confirmation='It sounds like you need to print a 10 99, is that correct?',
                         action=FlowTransferAction(
                             type='FlowTransfer',
-                            contact_flow_arn=reprint_1099_flow_arn,  # Todo: once transfered to flow, get customer input can prompt user (for which year, etc)
+                            contact_flow_arn=reprint_1099_flow_arn,
                         ),
                     ),
                     'PAMPHLETS': MenuItem(

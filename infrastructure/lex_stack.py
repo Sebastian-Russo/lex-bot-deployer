@@ -13,6 +13,8 @@ from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
 from .bots.office_closed_bot import OfficeClosedBot
 from .bots.pin_auth_bot import PinAuthBot
 from .bots.yes_no_bot import YesNoBot
+
+# from .bots_ssa.pamphlet_bot.lex.pamphlet_bot import PamphletBot
 from .bots_ssa.reprint_1099_bot.lex.reprint_1099_bot import Reprint1099Bot
 from .bots_ssa.ssa_menu_bot import SSAMenuBot
 
@@ -39,6 +41,7 @@ class LexStack(Stack):
         city_hall_queue_arn: str,
         city_manager_flow_arn: str,
         reprint_1099_flow_arn: str,
+        # pamphlet_flow_arn: str,
         env=None,
         **kwargs,
     ):
@@ -146,6 +149,7 @@ class LexStack(Stack):
                 connect_instance_arn=connect_instance_arn,
                 city_hall_queue_arn=city_hall_queue_arn,
                 reprint_1099_flow_arn=reprint_1099_flow_arn,
+                # pamphlet_flow_arn=pamphlet_flow_arn,
                 role=role,
                 log_group=log_group,
                 audio_bucket=audio_bucket,
@@ -160,6 +164,16 @@ class LexStack(Stack):
                 log_group=log_group,
                 audio_bucket=audio_bucket,
             ),
+            # PamphletBot(
+            #     self,
+            #     'PamphletBot',
+            #     prefix=prefix,
+            #     connect_instance_arn=connect_instance_arn,
+            #     city_hall_queue_arn=city_hall_queue_arn,
+            #     role=role,
+            #     log_group=log_group,
+            #     audio_bucket=audio_bucket,
+            # ),
         ]
 
         # Apply throttled deployment to avoid API limits

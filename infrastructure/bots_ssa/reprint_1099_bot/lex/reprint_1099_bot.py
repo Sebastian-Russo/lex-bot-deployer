@@ -11,8 +11,6 @@ from ....constructs.simple_bot import (
     SimpleIntent,
     SimpleLocale,
     SimpleSlot,
-    SimpleSlotType,
-    SimpleSlotTypeValue,
 )
 from ....utils.create_lambda import create_lambda
 
@@ -51,164 +49,110 @@ class Reprint1099Bot(Construct):
             },
         )
 
-        # Define slot types
-        slot_types = [
-            SimpleSlotType(
-                name='YesNoType',
-                values=[
-                    SimpleSlotTypeValue(
-                        'yes', ['yes', 'yeah', 'yep', 'correct', 'right']
-                    ),
-                    SimpleSlotTypeValue('no', ['no', 'nope', 'incorrect', 'wrong']),
-                ],
-            ),
-            SimpleSlotType(
-                name='PrivacyChoiceType',
-                values=[
-                    SimpleSlotTypeValue(
-                        'more_info', ['more information', 'more info', 'tell me more']
-                    ),
-                    SimpleSlotTypeValue(
-                        'continue', ['continue', 'proceed', 'go on', 'next']
-                    ),
-                ],
-            ),
-            SimpleSlotType(
-                name='SSNDigitType',
-                values=[SimpleSlotTypeValue(str(i), [str(i)]) for i in range(10)],
-            ),
-        ]
-
         locales: List[SimpleLocale] = [
             SimpleLocale(
                 locale_id='en_US',
                 voice_id='Joanna',
-                slot_types=slot_types,
                 code_hook=CodeHook(
                     lambda_=self.lambda_handler,
                     dialog=True,
                     fulfillment=True,
                 ),
                 intents=[
-                    # Initial 1099 request intent
+                    # Single intent handles entire conversation through sequential slots
                     SimpleIntent(
-                        name='Start1099Request',
+                        name='Process1099Request',
                         utterances=[
-                            'I would like to print a 10 99',
-                            'I need to print a 10 99',
-                            'I need a 10 99',
-                            'I want my 10 99',
-                            'Can I get my 10 99',
-                            '10 99',
+                            # Response to Connect's "Do you have a foreign address?"
+                            'yes',
+                            'yeah',
+                            'yep',
+                            'correct',
+                            'right',
+                            'true',
+                            'si',
+                            'sure',
+                            'okay',
+                            'no',
+                            'nope',
+                            'nah',
+                            'incorrect',
+                            'wrong',
+                            'false',
+                            'never',
+                            # Also include generic starters
+                            'help me',
+                            'I need help',
+                            'start',
+                            'begin',
+                            'hello',
+                            'hi',
                         ],
                         slots=[
+                            # Slot 1: Foreign address (filled by Connect prompt response)
                             SimpleSlot(
-                                name='birthDateInRange',
+                                name='foreignAddress',
                                 slot_type_name='AMAZON.AlphaNumeric',
                                 elicitation_messages=[
-                                    'Are you born between December 15 and January 31?'
+                                    'Do you have a foreign address?'  # Backup if Connect doesn't ask
                                 ],
-                                description='Whether user was born between Dec 15 and Jan 31',
+                                description='Whether user has a foreign address',
                                 required=True,
                                 max_retries=2,
-                            )
-                        ],
-                    ),
-                    # Intent for handling current year 1099 question
-                    SimpleIntent(
-                        name='CurrentYear1099',
-                        utterances=[
-                            'yes I want current year',
-                            'current year',
-                            'this year',
-                            'yes current',
-                        ],
-                        slots=[
+                            ),
+                            # Slot 2: Current year (conditional)
                             SimpleSlot(
-                                name='wantCurrentYear',
+                                name='currentYear',
                                 slot_type_name='AMAZON.AlphaNumeric',
                                 elicitation_messages=[
-                                    'Are you calling to get a replacement 10 99 for the 2024 tax year?'
+                                    'Are you calling to get a replacement 1099 for the 2024 tax year?'
                                 ],
-                                description='Whether user wants current year 10 99',
-                                required=True,
+                                description='Whether user wants current year 1099',
+                                required=False,  # Made conditional by Lambda
                                 max_retries=2,
-                            )
-                        ],
-                    ),
-                    # Intent for privacy information choice
-                    SimpleIntent(
-                        name='PrivacyChoice',
-                        utterances=[
-                            'more information',
-                            'more info',
-                            'continue',
-                            'proceed',
-                            'tell me more about privacy',
-                        ],
-                        slots=[
+                            ),
+                            # Slot 3: Prior years (conditional)
                             SimpleSlot(
-                                name='privacy_agreement',
+                                name='priorYears',
                                 slot_type_name='AMAZON.AlphaNumeric',
                                 elicitation_messages=[
-                                    'To hear detailed information about the Privacy Act or Paper Reduction Act, say more information. Otherwise, say continue.'
+                                    'Are you calling to get a replacement 1099 for any of the prior 5 years?'
+                                ],
+                                description='Whether user wants prior year 1099',
+                                required=False,  # Made conditional by Lambda
+                                max_retries=2,
+                            ),
+                            # Slot 4: Privacy choice (conditional)
+                            SimpleSlot(
+                                name='privacyChoice',
+                                slot_type_name='AMAZON.AlphaNumeric',
+                                elicitation_messages=[
+                                    'Alright. Before I can access your records, I will need to ask a question or two to verify who you are. Social Security is allowed to collect this information under the Social Security Act, and the collection meets the requirements of the Paperwork Reduction Act under OMB numbers 09600596 and 09600583. The whole process should take about six minutes. To hear detailed information about the Privacy Act or Paperwork Reduction Act, say more information. Otherwise, say continue.'
                                 ],
                                 description='User choice for privacy information',
-                                required=True,
+                                required=False,  # Made conditional by Lambda
                                 max_retries=2,
-                            )
-                        ],
-                    ),
-                    # Intent for terms agreement
-                    SimpleIntent(
-                        name='TermsAgreement',
-                        utterances=[
-                            'I agree',
-                            'yes I agree',
-                            'I understand',
-                            'yes I understand',
-                            'I do not agree',
-                            'no I do not agree',
-                        ],
-                        slots=[
+                            ),
+                            # Slot 5: Terms agreement (conditional)
                             SimpleSlot(
-                                name='agreeToTerms',
+                                name='termsAgreement',
                                 slot_type_name='AMAZON.AlphaNumeric',
                                 elicitation_messages=[
                                     'Please note that any person who makes a false representation in an effort to alter or obtain information from the Social Security Administration may be punished by a fine or imprisonment or both. Do you understand and agree to these terms?'
                                 ],
                                 description='Whether user agrees to terms',
-                                required=True,
+                                required=False,  # Made conditional by Lambda
                                 max_retries=2,
-                            )
-                        ],
-                    ),
-                    # Intent for collecting SSN - first digit
-                    SimpleIntent(
-                        name='CollectSSN',
-                        utterances=[
-                            'my social security number is',
-                            'my ssn is',
-                            'zero',
-                            'one',
-                            'two',
-                            'three',
-                            'four',
-                            'five',
-                            'six',
-                            'seven',
-                            'eight',
-                            'nine',
-                        ],
-                        slots=[
+                            ),
+                            # Slots 6-8: SSN Collection (conditional)
                             SimpleSlot(
                                 name='ssnDigit1',
                                 slot_type_name='AMAZON.Number',
                                 elicitation_messages=[
-                                    'Please say your Social Security number one digit at a time. What is the first digit?'
+                                    'Alright, thanks. Let us keep going. First, please say your Social Security number one digit at a time. What is the first digit?'
                                 ],
                                 description='First digit of SSN',
-                                required=True,
+                                required=False,  # Made conditional by Lambda
                                 max_retries=3,
                             ),
                             SimpleSlot(
@@ -216,7 +160,7 @@ class Reprint1099Bot(Construct):
                                 slot_type_name='AMAZON.Number',
                                 elicitation_messages=['What is the second digit?'],
                                 description='Second digit of SSN',
-                                required=True,
+                                required=False,
                                 max_retries=3,
                             ),
                             SimpleSlot(
@@ -224,12 +168,12 @@ class Reprint1099Bot(Construct):
                                 slot_type_name='AMAZON.Number',
                                 elicitation_messages=['What is the third digit?'],
                                 description='Third digit of SSN',
-                                required=True,
+                                required=False,
                                 max_retries=3,
                             ),
                         ],
                     ),
-                    # Intent for repeat requests
+                    # Keep utility intents separate
                     SimpleIntent(
                         name='RepeatRequest',
                         utterances=[
@@ -238,9 +182,10 @@ class Reprint1099Bot(Construct):
                             'can you repeat',
                             'what did you say',
                             "I didn't hear that",
+                            'pardon',
+                            'excuse me',
                         ],
                     ),
-                    # Intent for returning to main menu
                     SimpleIntent(
                         name='ReturnToMenu',
                         utterances=[
@@ -248,45 +193,11 @@ class Reprint1099Bot(Construct):
                             'return to menu',
                             'main menu',
                             'go back',
+                            'menu',
                         ],
                     ),
                 ],
             ),
-            # Spanish locale
-            # SimpleLocale(
-            #     locale_id='es_US',
-            #     voice_id='Lupe',
-            #     code_hook=CodeHook(
-            #         lambda_=self.lambda_handler,
-            #         dialog=True,
-            #         fulfillment=True,
-            #     ),
-            #     intents=[
-            #         SimpleIntent(
-            #             name='Start1099Request',
-            #             utterances=[
-            #                 'Me gustaría imprimir un 10 99',
-            #                 'Necesito imprimir un 10 99',
-            #                 'Necesito un 10 99',
-            #                 'Quiero mi 10 99',
-            #                 'Puedo obtener mi 10 99',
-            #             ],
-            #             slots=[
-            #                 SimpleSlot(
-            #                     name='birthDateInRange',
-            #                     slot_type_name='AMAZON.AlphaNumeric',
-            #                     elicitation_messages=[
-            #                         '¿Naciste entre el 15 de diciembre y el 31 de enero?'
-            #                     ],
-            #                     description='Whether user was born between Dec 15 and Jan 31',
-            #                     required=True,
-            #                     max_retries=2,
-            #                 )
-            #             ]
-            #         ),
-            #         # Add other Spanish intents as needed...
-            #     ],
-            # )
         ]
 
         # Create the bot
