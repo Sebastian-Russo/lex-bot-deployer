@@ -9,9 +9,16 @@
     "ActionMetadata": {
       "5f14b4d9-b6d3-40b1-8391-28f47e6134a7": {
         "position": {
-          "x": 1009.6,
-          "y": 70.4
+          "x": 1081.6,
+          "y": 80
         }
+      },
+      "Error Prompt": {
+        "position": {
+          "x": 636,
+          "y": 252.8
+        },
+        "isFriendlyName": true
       },
       "Invoke Lexbot": {
         "position": {
@@ -32,17 +39,10 @@
         "lexV2BotName": "lex-deploy-demo-py-yes-no",
         "lexV2BotAliasName": "live",
         "conditionMetadata": []
-      },
-      "Error Prompt": {
-        "position": {
-          "x": 636,
-          "y": 252.8
-        },
-        "isFriendlyName": true
       }
     },
     "Annotations": [],
-    "name": "lex-deploy-demo-py-Reprint1099Bot Flow",
+    "name": "lex-deploy-demo-py-MedicareCardReplacement Flow",
     "description": "",
     "type": "contactFlow",
     "status": "published",
@@ -57,7 +57,23 @@
     },
     {
       "Parameters": {
-        "Text": "Do you have a foreign Address?",
+        "Text": "Error connecting to bot. "
+      },
+      "Identifier": "Error Prompt",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
+        "Errors": [
+          {
+            "NextAction": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "You have reached the 10 99 bot! Congratuations. Now edit this message. ",
         "LexV2Bot": {
           "AliasArn": "arn:aws:lex:us-east-1:308665918648:bot-alias/14INWLQAIH/TDRBDYI2YS"
         }
@@ -73,22 +89,6 @@
           },
           {
             "NextAction": "Error Prompt",
-            "ErrorType": "NoMatchingError"
-          }
-        ]
-      }
-    },
-    {
-      "Parameters": {
-        "Text": "Error connecting to bot. "
-      },
-      "Identifier": "Error Prompt",
-      "Type": "MessageParticipant",
-      "Transitions": {
-        "NextAction": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
-        "Errors": [
-          {
-            "NextAction": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
             "ErrorType": "NoMatchingError"
           }
         ]
