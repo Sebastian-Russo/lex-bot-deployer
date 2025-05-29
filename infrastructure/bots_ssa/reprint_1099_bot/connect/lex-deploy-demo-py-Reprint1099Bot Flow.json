@@ -71,7 +71,7 @@
     },
     {
       "Parameters": {
-        "Text": "Okay, Benefit statement or 10 99. One monent. Did you know you can view, print, save or request a copy of your s s a 10 99 or ss a 10 42 by going online and using your s s a account. Go to w w w dot social security dot g o v and select Sign in. \nDo you have a foreign Address?",
+        "Text": "Do you have a foreign Address?",
         "LexV2Bot": {
           "AliasArn": "arn:aws:lex:us-east-1:308665918648:bot-alias/14INWLQAIH/TDRBDYI2YS"
         }

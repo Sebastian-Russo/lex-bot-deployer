@@ -7,7 +7,6 @@ from ..constructs.menu_bot.models import (
     FlowTransferAction,
     MenuItem,
     PromptAction,
-    QueueTransferAction,
     RequiredIntent,
 )
 from .utterances.help_utterances import HELP_UTTERANCES
@@ -30,9 +29,13 @@ class SSAMenuBot(Construct):
         prefix: str,
         connect_instance_arn: str,
         city_hall_queue_arn: str,
-        reprint_1099_flow_arn: str,  # city manager contact flow arn, allows menu bot to route caller to different flow
-        # create new flow that calls reprint bot
-        #
+        reprint_1099_flow_arn: str,
+        pamphlet_flow_arn: str,
+        medicare_enrollment_flow_arn: str,
+        medicare_card_replacement_flow_arn: str,
+        ssn_replacement_form_flow_arn: str,
+        change_of_address_flow_arn: str,
+        benefit_payment_flow_arn: str,
         description: Optional[str] = None,
         role=None,
         log_group=None,
@@ -71,6 +74,7 @@ class SSAMenuBot(Construct):
                         action=FlowTransferAction(
                             type='FlowTransfer',
                             contact_flow_arn=reprint_1099_flow_arn,
+                            pre_transfer_prompt='Okay, Benefit statement or 10 99. One monent. Did you know you can view, print, save or request a copy of your s s a 10 99 or ss a 10 42 by going online and using your s s a account. Go to w w w dot social security dot g o v and select Sign in.',
                         ),
                     ),
                     'PAMPHLETS': MenuItem(
@@ -89,8 +93,8 @@ class SSAMenuBot(Construct):
                         confirmation='You would like a pamphlet, is that correct?',
                         action=FlowTransferAction(
                             type='FlowTransfer',
-                            contact_flow_arn=reprint_1099_flow_arn,
-                            pre_transfer_prompt='Ok, pamphelts. One moment. THere are several pamphlet topics to choose from. I will take you through the list and you can select the ones you want. To skip ahead to the next topic, just say skip topic. To hear it again, say repeat that. And at any time, you can say, I am done. Now, to get started, do you want the pamphlet on Understanding Social Security?',
+                            contact_flow_arn=pamphlet_flow_arn,
+                            pre_transfer_prompt='',
                         ),
                     ),
                     'MEDICARE_ENROLLMENT': MenuItem(
@@ -101,10 +105,10 @@ class SSAMenuBot(Construct):
                             'Do I have medicare?',
                         ],
                         confirmation='I heard you want information about medicare, is that correct?',
-                        action=QueueTransferAction(
-                            type='QueueTransfer',
-                            queue_arn=f'{connect_instance_arn}/queue/bob@example.com',
-                            pre_transfer_prompt='Ok, medicare. One moment. Are you already enrolled in Medicare?',
+                        action=FlowTransferAction(
+                            type='FlowTransfer',
+                            contact_flow_arn=medicare_enrollment_flow_arn,
+                            pre_transfer_prompt='',
                         ),
                     ),
                     'MEDICARE_CARD_REPLACEMENT': MenuItem(
@@ -115,9 +119,9 @@ class SSAMenuBot(Construct):
                             'I need to replace my medicare card.',
                         ],
                         confirmation='I heard you need a new medicare card, is that correct?',
-                        action=QueueTransferAction(
-                            type='QueueTransfer',
-                            queue_arn=f'{connect_instance_arn}/queue/bob@example.com',
+                        action=FlowTransferAction(
+                            type='FlowTransfer',
+                            contact_flow_arn=medicare_card_replacement_flow_arn,
                             pre_transfer_prompt='Ok, Medicare Replacement Card. One moment. Did you know you can request a Replacement Medicare Card by going online and using your My S S A account? Go to w w w dot social security dot g o v and select Sign in.',  # prompt P1045, also after is prompt P1173, not included here
                         ),
                     ),
@@ -129,9 +133,9 @@ class SSAMenuBot(Construct):
                             'I need to replace my SSN.',
                         ],
                         confirmation='I heard you need to replace your social security card, is that correct?',
-                        action=QueueTransferAction(
-                            type='QueueTransfer',
-                            queue_arn=f'{connect_instance_arn}/queue/bob@example.com',
+                        action=FlowTransferAction(
+                            type='FlowTransfer',
+                            contact_flow_arn=ssn_replacement_form_flow_arn,
                             pre_transfer_prompt='Ok, Social Security Card. One moment. Which of these would you like to do? Get a Replacement Social Social Security Card. Apply for a social security card number. Change personal information. Or go back to the main menu.',  # prompt: P1418
                         ),
                     ),
@@ -143,9 +147,9 @@ class SSAMenuBot(Construct):
                             'I have a different address.',
                         ],
                         confirmation='I heard you need to change your address, is that correct?',
-                        action=QueueTransferAction(
-                            type='QueueTransfer',
-                            queue_arn=f'{connect_instance_arn}/queue/bob@example.com',
+                        action=FlowTransferAction(
+                            type='FlowTransfer',
+                            contact_flow_arn=change_of_address_flow_arn,
                             pre_transfer_prompt='Ok, Change address or phone number. To get started, I have a couple of questions. Are you ceveiving retirement, survivor or disability benefits?',
                         ),
                     ),
@@ -159,9 +163,9 @@ class SSAMenuBot(Construct):
                             'Check benefit payments.',
                         ],
                         confirmation='I heard you want to verify your benefit payments, is that correct?',
-                        action=QueueTransferAction(
-                            type='QueueTransfer',
-                            queue_arn=f'{connect_instance_arn}/queue/bob@example.com',
+                        action=FlowTransferAction(
+                            type='FlowTransfer',
+                            contact_flow_arn=benefit_payment_flow_arn,
                             pre_transfer_prompt='Alright, benefits verification or proof of income. One moment. You may be able to obtain a benefit verification, sometimes called a proof of income letter, as verification that you do or do not receive benefits by going online and using your My S S A account. Go to w w w dot social security dot g o v and select Sign in.',
                         ),
                     ),
