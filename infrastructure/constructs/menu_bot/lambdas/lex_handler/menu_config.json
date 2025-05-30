@@ -1,0 +1,63 @@
+{
+  "en_US": {
+    "langCode": "en_US",
+    "greeting": "Welcome to the Social Security Administration. Please listen carefully as our menus have recently changed. Para espanol, marque siete.",
+    "morePrompt": "How can I help you today?",
+    "help": "You can say things like, \"I would like to print a 10 99\", \"I would like a pamphlet\", \"I want to enroll in medicare\",\"I need to replace my social security card\", \"I need to change my address\", \"I want to verify my benefit payments\", \"I want to change my personal information\".",
+    "hangUp": "Ok, thank you for calling, and have a nice day!",
+    "OfficeLocator": {
+      "type": "FlowTransfer",
+      "custom_handler": null,
+      "pre_transfer_prompt": "Okay, Office Locator. One moment.",
+      "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/f378725b-f83d-40c0-95fc-a6aa44940ef9"
+    },
+    "1099_REPRINT": {
+      "type": "FlowTransfer",
+      "custom_handler": null,
+      "pre_transfer_prompt": "Okay, Benefit statement or 10 99. One monent. Did you know you can view, print, save or request a copy of your s s a 10 99 or ss a 10 42 by going online and using your s s a account. Go to w w w dot social security dot g o v and select Sign in.",
+      "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/a08c07f3-1af8-4306-8ce6-5b5a252e7dc8"
+    },
+    "PAMPHLETS": {
+      "type": "FlowTransfer",
+      "custom_handler": null,
+      "pre_transfer_prompt": "",
+      "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/4d3bf4e8-f1ff-4808-9de9-cfd2206984c4"
+    },
+    "MEDICARE_ENROLLMENT": {
+      "type": "FlowTransfer",
+      "custom_handler": null,
+      "pre_transfer_prompt": "",
+      "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/7136ccab-51a1-438e-921f-49244f341ba6"
+    },
+    "MEDICARE_CARD_REPLACEMENT": {
+      "type": "FlowTransfer",
+      "custom_handler": null,
+      "pre_transfer_prompt": "Ok, Medicare Replacement Card. One moment. Did you know you can request a Replacement Medicare Card by going online and using your My S S A account? Go to w w w dot social security dot g o v and select Sign in.",
+      "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/cd58671d-abc3-4625-ba27-b4e98fde2fcf"
+    },
+    "SSN_REPLACEMENT_FORM": {
+      "type": "FlowTransfer",
+      "custom_handler": null,
+      "pre_transfer_prompt": "Ok, Social Security Card. One moment. Which of these would you like to do? Get a Replacement Social Social Security Card. Apply for a social security card number. Change personal information. Or go back to the main menu.",
+      "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/7aff72cf-ba07-43d3-8ee7-8516349847d3"
+    },
+    "CHANGE_OF_ADDRESS": {
+      "type": "FlowTransfer",
+      "custom_handler": null,
+      "pre_transfer_prompt": "Ok, Change address or phone number. To get started, I have a couple of questions. Are you ceveiving retirement, survivor or disability benefits?",
+      "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/e66bfb50-d271-49f2-8ba3-474792076aea"
+    },
+    "BENEFIT_PAYMENT": {
+      "type": "FlowTransfer",
+      "custom_handler": null,
+      "pre_transfer_prompt": "Alright, benefits verification or proof of income. One moment. You may be able to obtain a benefit verification, sometimes called a proof of income letter, as verification that you do or do not receive benefits by going online and using your My S S A account. Go to w w w dot social security dot g o v and select Sign in.",
+      "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/67b97347-2363-4a26-8e98-a8b40459661a"
+    },
+    "MISC": {
+      "custom_handler": null,
+      "prompt": "I am not Alexa, Please dont ask me frivolous questions. Goodbye.",
+      "type": "Prompt",
+      "hang_up": true
+    }
+  }
+}

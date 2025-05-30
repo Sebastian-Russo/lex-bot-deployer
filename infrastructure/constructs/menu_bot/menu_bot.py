@@ -113,14 +113,22 @@ class MenuBot(Construct):
         bot_name = f'{prefix}-{id}'
         config_json = convert_to_lambda_config(menu_locales)
 
+        # Get the lambda directory path
+        lambda_dir = os.path.join(os.path.dirname(__file__), 'lambdas', 'lex_handler')
+        # Write config to file in lambda directory
+        config_file_path = os.path.join(lambda_dir, 'menu_config.json')
+        with open(config_file_path, 'w') as f:
+            json.dump(json.loads(config_json), f, indent=2)
+
         # Create Lex handler
         self.lex_handler = create_lambda(
             self,
             'LexHandler',
-            os.path.join(os.path.dirname(__file__), 'lambdas', 'lex_handler'),
+            lambda_dir,
             function_name=f'{bot_name}-lex-handler',
             description=f'Manages the {bot_name} lex conversation',
-            environment={'CONFIG': config_json},
+            # environment={'CONFIG': config_json},
+            environment={},
         )
 
         # Allow lex handler to invoke custom action lambdas
@@ -184,6 +192,14 @@ class MenuBot(Construct):
             ),
         )
 
+        # Get connect lambda directory and write config file
+        connect_lambda_dir = os.path.join(
+            os.path.dirname(__file__), 'lambdas', 'connect_handler'
+        )
+        connect_config_file_path = os.path.join(connect_lambda_dir, 'menu_config.json')
+        with open(connect_config_file_path, 'w') as f:
+            json.dump(json.loads(config_json), f, indent=2)
+
         # Create Connect handler Lambda
         connect_handler = create_lambda(
             self,
@@ -191,7 +207,8 @@ class MenuBot(Construct):
             os.path.join(os.path.dirname(__file__), 'lambdas', 'connect_handler'),
             function_name=f'{bot_name}-connect-handler',
             description='Provides greeting information to Connect. Expects a lang parameter.',
-            environment={'CONFIG': config_json},
+            # environment={'CONFIG': config_json},
+            environment={},
         )
 
         # Connect has a limited number of associations, since this is system lambda,

@@ -36,6 +36,7 @@ class SSAMenuBot(Construct):
         ssn_replacement_form_flow_arn: str,
         change_of_address_flow_arn: str,
         benefit_payment_flow_arn: str,
+        office_locator_flow_arn: str,
         description: Optional[str] = None,
         role=None,
         log_group=None,
@@ -64,6 +65,19 @@ class SSAMenuBot(Construct):
                     response='Ok, thank you for calling, and have a nice day!',
                 ),
                 menu={
+                    'OfficeLocator': MenuItem(
+                        utterances=[
+                            'I would like to find an office.',
+                            'I need to find an office.',
+                            'I need an office.',
+                        ],
+                        confirmation='It sounds like you need to find an office, is that correct?',
+                        action=FlowTransferAction(
+                            type='FlowTransfer',
+                            contact_flow_arn=office_locator_flow_arn,
+                            pre_transfer_prompt='Okay, Office Locator. One moment.',
+                        ),
+                    ),
                     '1099_REPRINT': MenuItem(
                         utterances=[
                             'I would like to print a 10 99.',

@@ -1,0 +1,98 @@
+{
+  "Version": "2019-10-30",
+  "StartAction": "Invoke Lexbot",
+  "Metadata": {
+    "entryPointPosition": {
+      "x": 40,
+      "y": 40
+    },
+    "ActionMetadata": {
+      "5f14b4d9-b6d3-40b1-8391-28f47e6134a7": {
+        "position": {
+          "x": 1081.6,
+          "y": 80
+        }
+      },
+      "Error Prompt": {
+        "position": {
+          "x": 636,
+          "y": 252.8
+        },
+        "isFriendlyName": true
+      },
+      "Invoke Lexbot": {
+        "position": {
+          "x": 368,
+          "y": 33.6
+        },
+        "isFriendlyName": true,
+        "parameters": {
+          "LexV2Bot": {
+            "AliasArn": {
+              "displayName": "live",
+              "useLexBotDropdown": true,
+              "lexV2BotName": "lex-deploy-demo-py-office-locator"
+            }
+          }
+        },
+        "useLexBotDropdown": true,
+        "lexV2BotName": "lex-deploy-demo-py-office-locator",
+        "lexV2BotAliasName": "live",
+        "conditionMetadata": []
+      }
+    },
+    "Annotations": [],
+    "name": "lex-deploy-demo-py-OfficeLocator Flow",
+    "description": "",
+    "type": "contactFlow",
+    "status": "published",
+    "hash": {}
+  },
+  "Actions": [
+    {
+      "Parameters": {},
+      "Identifier": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
+      "Type": "DisconnectParticipant",
+      "Transitions": {}
+    },
+    {
+      "Parameters": {
+        "Text": "Error connecting to bot. "
+      },
+      "Identifier": "Error Prompt",
+      "Type": "MessageParticipant",
+      "Transitions": {
+        "NextAction": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
+        "Errors": [
+          {
+            "NextAction": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    },
+    {
+      "Parameters": {
+        "Text": "Okay, office information. One moment. Go ahead and say or enter the five digit zip code of the area where you want to find an office.",
+        "LexV2Bot": {
+          "AliasArn": "arn:aws:lex:us-east-1:308665918648:bot-alias/S7IGLOYNUF/IXB6AXISGB"
+        }
+      },
+      "Identifier": "Invoke Lexbot",
+      "Type": "ConnectParticipantWithLexBot",
+      "Transitions": {
+        "NextAction": "Error Prompt",
+        "Errors": [
+          {
+            "NextAction": "5f14b4d9-b6d3-40b1-8391-28f47e6134a7",
+            "ErrorType": "NoMatchingCondition"
+          },
+          {
+            "NextAction": "Error Prompt",
+            "ErrorType": "NoMatchingError"
+          }
+        ]
+      }
+    }
+  ]
+}

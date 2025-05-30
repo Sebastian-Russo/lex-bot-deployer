@@ -22,6 +22,7 @@ LexStack(
     ssn_replacement_form_flow_arn='arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/7aff72cf-ba07-43d3-8ee7-8516349847d3',
     change_of_address_flow_arn='arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/e66bfb50-d271-49f2-8ba3-474792076aea',
     benefit_payment_flow_arn='arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/67b97347-2363-4a26-8e98-a8b40459661a',
+    office_locator_flow_arn='arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/f378725b-f83d-40c0-95fc-a6aa44940ef9',
 )
 
 app.synth()

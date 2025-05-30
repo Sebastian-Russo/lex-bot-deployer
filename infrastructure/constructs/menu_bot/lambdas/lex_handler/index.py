@@ -18,17 +18,33 @@ class LexHandler:
     Handles Lex events for menu-based bots
     """
 
+    config = None
+
     def __init__(self):
         """
-        Initialize the handler with configuration from environment variables
+        Initialize the handler with configuration from file
         """
-        config_str = os.environ.get('CONFIG')
-        if not config_str:
-            raise ValueError('CONFIG environment variable is required but was empty')
-        self.config = json.loads(config_str)
+        # Read config from file instead of environment variable
+        config_file_path = os.path.join(os.path.dirname(__file__), 'menu_config.json')
+        try:
+            with open(config_file_path, 'r') as f:
+                self.config = json.load(f)
+        except FileNotFoundError:
+            raise ValueError(f'Config file not found at {config_file_path}')
+        except json.JSONDecodeError as e:
+            raise ValueError(f'Invalid JSON in config file: {str(e)}')
 
-        self.event = None
-        self.helper = None
+    # def __init__(self):
+    #     """
+    #     Initialize the handler with configuration from environment variables
+    #     """
+    #     config_str = os.environ.get('CONFIG')
+    #     if not config_str:
+    #         raise ValueError('CONFIG environment variable is required but was empty')
+    #     self.config = json.loads(config_str)
+
+    #     self.event = None
+    #     self.helper = None
 
     def handler(self, event: Dict[str, Any], context=None) -> Dict[str, Any]:
         """

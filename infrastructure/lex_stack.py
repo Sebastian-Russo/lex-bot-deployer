@@ -13,6 +13,7 @@ from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
 from .bots.office_closed_bot import OfficeClosedBot
 from .bots.pin_auth_bot import PinAuthBot
 from .bots.yes_no_bot import YesNoBot
+from .bots_ssa.office_locator_bot.lex.office_locator_bot import OfficeLocatorBot
 
 # from .bots_ssa.pamphlet_bot.lex.pamphlet_bot import PamphletBot
 from .bots_ssa.reprint_1099_bot.lex.reprint_1099_bot import Reprint1099Bot
@@ -47,6 +48,7 @@ class LexStack(Stack):
         ssn_replacement_form_flow_arn: str,
         change_of_address_flow_arn: str,
         benefit_payment_flow_arn: str,
+        office_locator_flow_arn: str,
         env=None,
         **kwargs,
     ):
@@ -160,6 +162,7 @@ class LexStack(Stack):
                 ssn_replacement_form_flow_arn=ssn_replacement_form_flow_arn,
                 change_of_address_flow_arn=change_of_address_flow_arn,
                 benefit_payment_flow_arn=benefit_payment_flow_arn,
+                office_locator_flow_arn=office_locator_flow_arn,
                 role=role,
                 log_group=log_group,
                 audio_bucket=audio_bucket,
@@ -174,16 +177,17 @@ class LexStack(Stack):
                 log_group=log_group,
                 audio_bucket=audio_bucket,
             ),
-            # PamphletBot(
-            #     self,
-            #     'PamphletBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     city_hall_queue_arn=city_hall_queue_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket,
-            # ),
+            # office locator bot
+            OfficeLocatorBot(
+                self,
+                'OfficeLocatorBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                city_hall_queue_arn=city_hall_queue_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
         ]
 
         # Apply throttled deployment to avoid API limits
