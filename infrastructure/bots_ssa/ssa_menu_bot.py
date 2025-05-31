@@ -111,20 +111,6 @@ class SSAMenuBot(Construct):
                             pre_transfer_prompt='',
                         ),
                     ),
-                    'MEDICARE_ENROLLMENT': MenuItem(
-                        utterances=[
-                            'Medicare enrollment.',
-                            'I want to enroll in medicare.',
-                            'Set up medicare.',
-                            'Do I have medicare?',
-                        ],
-                        confirmation='I heard you want information about medicare, is that correct?',
-                        action=FlowTransferAction(
-                            type='FlowTransfer',
-                            contact_flow_arn=medicare_enrollment_flow_arn,
-                            pre_transfer_prompt='',
-                        ),
-                    ),
                     'MEDICARE_CARD_REPLACEMENT': MenuItem(
                         utterances=[
                             'Medicare card replacement.',
@@ -137,6 +123,20 @@ class SSAMenuBot(Construct):
                             type='FlowTransfer',
                             contact_flow_arn=medicare_card_replacement_flow_arn,
                             pre_transfer_prompt='Ok, Medicare Replacement Card. One moment. Did you know you can request a Replacement Medicare Card by going online and using your My S S A account? Go to w w w dot social security dot g o v and select Sign in.',  # prompt P1045, also after is prompt P1173, not included here
+                        ),
+                    ),
+                    'MEDICARE_ENROLLMENT': MenuItem(
+                        utterances=[
+                            'Medicare enrollment.',
+                            'I want to enroll in medicare.',
+                            'Set up medicare.',
+                            'Do I have medicare?',
+                        ],
+                        confirmation='I heard you want information about medicare, is that correct?',
+                        action=FlowTransferAction(
+                            type='FlowTransfer',
+                            contact_flow_arn=medicare_enrollment_flow_arn,
+                            pre_transfer_prompt='',
                         ),
                     ),
                     'SSN_REPLACEMENT_FORM': MenuItem(

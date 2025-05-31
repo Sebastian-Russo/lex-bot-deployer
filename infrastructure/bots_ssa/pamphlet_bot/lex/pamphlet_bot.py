@@ -6,6 +6,7 @@ from constructs import Construct
 
 from ....constructs.simple_bot import (
     SimpleBot,
+    SimpleBotProps,
 )
 from ....utils.create_lambda import create_lambda
 
@@ -43,28 +44,24 @@ class PamphletBot(Construct):
             },
         )
 
-        # Define slot types
-        slot_types = []
-
         # Define locales
         locales = []
-
-        # Define intents
-        intents = []
 
         # Create bot
         SimpleBot(
             self,
             'Bot',
-            bot_name=bot_name,
-            description=description,
-            role=role,
-            idle_session_ttl_in_seconds=idle_session_ttl_in_seconds,
-            nlu_confidence_threshold=nlu_confidence_threshold,
-            log_group=log_group,
-            audio_bucket=audio_bucket,
-            connect_instance_arn=connect_instance_arn,
-            slot_types=slot_types,
-            locales=locales,
-            intents=intents,
+            props=SimpleBotProps(
+                name=bot_name,
+                description=description,
+                role=role,
+                idle_session_ttl_in_seconds=idle_session_ttl_in_seconds,
+                nlu_confidence_threshold=nlu_confidence_threshold,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+                connect_instance_arn=connect_instance_arn,
+                locales=locales,
+            ),
+            # slot_types=slot_types,
+            # intents=intents,
         )

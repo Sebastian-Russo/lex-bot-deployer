@@ -31,12 +31,12 @@
             "AliasArn": {
               "displayName": "live",
               "useLexBotDropdown": true,
-              "lexV2BotName": "lex-deploy-demo-py-yes-no"
+              "lexV2BotName": "lex-deploy-demo-py-medicare-card-replacement"
             }
           }
         },
         "useLexBotDropdown": true,
-        "lexV2BotName": "lex-deploy-demo-py-yes-no",
+        "lexV2BotName": "lex-deploy-demo-py-medicare-card-replacement",
         "lexV2BotAliasName": "live",
         "conditionMetadata": []
       }
@@ -73,9 +73,9 @@
     },
     {
       "Parameters": {
-        "Text": "You have reached the 10 99 bot! Congratuations. Now edit this message. ",
+        "Text": "Okay. Medicare Replacement Card. One moment. Did you know you can request a Replacement Medicare Card by going online and using your My S S A account? Go to w w w dot social security dot g o v and select Sign in.\nBefore I can access your records, I will need to ask a question or two to verify who you are. Social Security is allowed to collect this information under the Social Security Act and the collect meets the requirements of the Paperwork Reduction Act under OMB number 0 9 6 0 0 5 9 6. The whole process should take about four minutes. To hear detailed information about the Privacy Act or Paperwork Reduction Act, say more information. Otherwise, say continue.",
         "LexV2Bot": {
-          "AliasArn": "arn:aws:lex:us-east-1:308665918648:bot-alias/14INWLQAIH/TDRBDYI2YS"
+          "AliasArn": "arn:aws:lex:us-east-1:308665918648:bot-alias/EXWQCDNQF1/CSAX0JLDFR"
         }
       },
       "Identifier": "Invoke Lexbot",
