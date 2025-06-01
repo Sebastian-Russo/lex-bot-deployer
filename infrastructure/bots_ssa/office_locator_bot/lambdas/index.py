@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 import re
 from typing import Any, Dict
 
@@ -17,7 +18,7 @@ class OfficeLocatorHandler:
         self.office_api_endpoint = os.environ.get('OFFICE_API_ENDPOINT')
 
     def handler(self, event: Dict[str, Any], context=None) -> Dict[str, Any]:
-        """Main handler function"""
+        """Route to dialog_hook() or fulfillment_hook()"""
         logger.debug('Event: %s', json.dumps(event, indent=2))
 
         try:
@@ -37,394 +38,387 @@ class OfficeLocatorHandler:
                 'I apologize, but I encountered an error. Let me transfer you to an agent.',
             )
 
-    def dialog_hook(self, event: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle dialog code hook - controls conditional slot collection"""
+    def dialog_hook(self, event):
+        """Handle dialog hook"""
+        intent_object = event['sessionState']['intent']
         intent_name = self.get_intent_name(event)
         slots = self.get_slots(event)
-
-        logger.debug(f'Dialog hook - Intent: {intent_name}, Slots: {slots}')
+        session_attributes = self.get_session_attributes(event)
 
         if intent_name == 'LocateOffice':
-            return self.handle_locate_office_dialog(event, slots)
-        elif intent_name == 'ChangeZipCode':
-            return self.handle_change_zip_dialog(event, slots)
-        else:
-            # For utility intents, just delegate
-            return self.delegate_response(event)
-
-    def handle_locate_office_dialog(self, event, slots):
-        """Handle conditional slot collection for LocateOffice intent"""
-        zip_code = self.get_slot_value(slots, 'zipCode')
-        confirm_zip = self.get_slot_value(slots, 'confirmZip')
-        needs_card = self.get_slot_value(slots, 'needsCard')
-        next_action = self.get_slot_value(slots, 'nextAction')
-
-        # Step 1: Validate zipCode
-        if zip_code:
-            if not self.is_valid_zip_code(zip_code):
-                # Invalid zip - re-ask with different message
+            # Step 1. Check if zipCode is set
+            if not slots.get('zipCode') or not slots['zipCode'].get('value'):
                 return self.elicit_slot_response(
-                    event,
-                    'zipCode',
-                    'That is an invalid zip code. Let us try again. Please say the five digit zip code where you would like me to search. Like this, 1 2 3 0 0. Or enter it on your keypad.',
-                )
-
-            # Valid zip - ask for confirmation if not already confirmed
-            if not confirm_zip:
-                return self.elicit_slot_response(
-                    event, 'confirmZip', f'That zip code is {zip_code}. Right?'
-                )
-
-            # Step 2: Handle confirmation
-            if confirm_zip and not self.is_yes_response(confirm_zip):
-                # User said no to confirmation - clear zipCode and re-ask
-                return self.clear_slot_and_elicit(
-                    event,
                     'zipCode',
                     'Okay, office information. One moment. Go ahead and say or enter the five digit zip code for your area or the area where you want to find an office.',
-                    slots_to_clear=['zipCode', 'confirmZip'],
+                    session_attributes,
+                    intent_object,
                 )
 
-            # Step 3: Zip confirmed - check if we need to ask about card
-            if confirm_zip and self.is_yes_response(confirm_zip):
-                # Look up if card center is available (would be actual API call)
-                has_card_center = self.check_card_center_availability(zip_code)
+            zip_code = slots['zipCode']['value']['interpretedValue']
 
-                if has_card_center and not needs_card:
-                    # Card center available - ask if they need card
+            # Step 2. Check for "change zip code" phrases
+            if any(
+                phrase in zip_code.lower()
+                for phrase in [
+                    'change zip code',
+                    'different zip code',
+                    'new zip code',
+                    'search somewhere else',
+                    'look somewhere else',
+                ]
+            ):
+                intent_object['slots']['zipCode'] = None
+                intent_object['slots']['confirmZip'] = None
+                return self.elicit_slot_response(
+                    'zipCode',
+                    "Alright, let's look somewhere else. Please say the five digit zip code.",
+                    session_attributes,
+                    intent_object,
+                )
+
+            # Step 3. Validate zip code format
+            if not re.match(r'^\d{5}$', zip_code):
+                return self.elicit_slot_response(
+                    'zipCode',
+                    "That is an invalid Zip Code. Let's try again. Please say the five digit zip code where you'd like me to search. Like this 1 2 3 0 0. Or enter it on your keypad.",
+                    session_attributes,
+                    intent_object,
+                )
+
+            # Step 4. Check for "I don't know" or "I don't have it"
+            if (
+                "i don't know" in zip_code.lower()
+                or "i don't have it" in zip_code.lower()
+            ):
+                session_attributes.update(
+                    {
+                        'action': 'TransferToAgent',
+                        'reason': 'NoZipCode',
+                    }
+                )
+                return self.close_response(
+                    intent_name=intent_name,
+                    message="Sounds like you don't know the zip code. Let me connect you to an agent",
+                    session_attributes=session_attributes,
+                )
+
+            # Step 5. Confirm zip code
+            if not slots.get('confirmZip') or not slots['confirmZip'].get('value'):
+                return self.elicit_slot_response(
+                    'confirmZip',
+                    f'That zip code is {zip_code}. Right?',
+                    session_attributes,
+                    intent_object,
+                )
+
+            confirm_zip = None
+            if (
+                slots.get('confirmZip')
+                and slots['confirmZip'].get('value')
+                and slots['confirmZip']['value'].get('interpretedValue')
+            ):
+                confirm_zip = slots['confirmZip']['value']['interpretedValue'].lower()
+
+            if confirm_zip is None:
+                return self.elicit_slot_response(
+                    'confirmZip',
+                    f"Sorry, I didn't understand. Is {zip_code} the correct zip code? Please say yes or no.",
+                    session_attributes,
+                    intent_object,
+                )
+            elif 'no' in confirm_zip:
+                intent_object['slots']['zipCode'] = None
+                intent_object['slots']['confirmZip'] = None
+                return self.elicit_slot_response(
+                    'zipCode',
+                    "My mistake. Let's try again. Please say the five digit zip code where you'd like me to search like this 1 2 3 0 0. Or enter it on your keypad.",
+                    session_attributes,
+                    intent_object,
+                )
+            elif 'yes' in confirm_zip or 'right' in confirm_zip:
+                intent_object['slots']['confirmZip'] = None
+                # Step 6. Ask about card needs
+                if not slots.get('needsCard') or not slots['needsCard'].get('value'):
                     return self.elicit_slot_response(
-                        event,
                         'needsCard',
                         'Thanks. Do you need to get a Social Security card?',
+                        session_attributes,
+                        intent_object,
                     )
 
-                # Either no card center OR card question answered - check next action
-                if not next_action:
-                    # Need to ask what they want to do next
-                    # This will be handled in fulfillment after providing office info
-                    return self.delegate_response(event)
+                # Step 7. Check nextAction
+                if not slots.get('nextAction') or not slots['nextAction'].get('value'):
+                    return self.elicit_slot_response(
+                        'nextAction',
+                        "What would you like to do next? Say 'repeat that' to hear the info again, 'local office' for local office details, 'change zip code' to search another area, 'return to menu' to start over, or 'finished' to end.",
+                        session_attributes,
+                        intent_object,
+                    )
 
-        # Let Lex handle other cases
-        return self.delegate_response(event)
+                next_action = slots['nextAction']['value']['interpretedValue'].lower()
 
-    def handle_change_zip_dialog(self, event, slots):
-        """Handle dialog for ChangeZipCode intent"""
-        new_zip_code = self.get_slot_value(slots, 'newZipCode')
+                if 'repeat' in next_action:
+                    intent_object['slots']['nextAction'] = None
+                    return self.delegate_response(session_attributes, intent_object)
+                elif 'local office' in next_action:
+                    session_attributes.update({'needsCard': 'no'})
+                    intent_object['slots']['nextAction'] = None
+                    return self.delegate_response(session_attributes, intent_object)
+                elif 'change zip code' in next_action:
+                    intent_object['slots']['zipCode'] = None
+                    intent_object['slots']['confirmZip'] = None
+                    intent_object['slots']['needsCard'] = None
+                    intent_object['slots']['nextAction'] = None
+                    return self.elicit_slot_response(
+                        'zipCode',
+                        "Alright, let's look somewhere else. Please say the five digit zip code.",
+                        session_attributes,
+                        intent_object,
+                    )
+                elif 'finished' in next_action:
+                    return self.close_response(
+                        intent_name=intent_name,
+                        message='Goodbye.',
+                        session_attributes=session_attributes,
+                    )
+                elif 'return to menu' in next_action:
+                    session_attributes.update({'action': 'ReturnToMenu'})
+                    return {
+                        'sessionState': {
+                            'dialogAction': {'type': 'ElicitIntent'},
+                            'intent': None,
+                            'sessionAttributes': session_attributes,
+                        },
+                        'messages': [
+                            {
+                                'contentType': 'PlainText',
+                                'content': 'Returning to the main menu. How can I assist you now?',
+                            }
+                        ],
+                    }
+                else:
+                    intent_object['slots']['nextAction'] = None
+                    return self.elicit_slot_response(
+                        'nextAction',
+                        "Sorry, I didn't understand. Say 'repeat that', 'local office', 'change zip code', 'return to menu', or 'finished'.",
+                        session_attributes,
+                        intent_object,
+                    )
 
-        if new_zip_code and not self.is_valid_zip_code(new_zip_code):
-            return self.elicit_slot_response(
-                event,
-                'newZipCode',
-                'That is an invalid zip code. Let us try again. Please say the five digit zip code where you would like me to search. Like this, 1 2 3 0 0. Or enter it on your keypad.',
-            )
+        # Fallback for unexpected intents
+        return self.close_response(
+            intent_name=intent_name,
+            message="Sorry, I didn’t understand. Please say 'office' to locate an office.",
+            session_attributes=session_attributes,
+        )
 
-        return self.delegate_response(event)
-
-    def fulfillment_hook(self, event: Dict[str, Any]) -> Dict[str, Any]:
-        """Handle fulfillment - provide office information and handle next actions"""
+    def fulfillment_hook(self, event):
+        """Handle fulfillment for office locator intent"""
         intent_name = self.get_intent_name(event)
         slots = self.get_slots(event)
-        session_attributes = event.get('sessionAttributes', {})
-
-        logger.debug(f'Fulfillment hook - Intent: {intent_name}, Slots: {slots}')
+        session_attributes = self.get_session_attributes(event)
+        intent_object = event['sessionState']['intent']
 
         if intent_name == 'LocateOffice':
-            return self.fulfill_locate_office(event, slots, session_attributes)
-        elif intent_name == 'ChangeZipCode':
-            return self.fulfill_change_zip(event, slots, session_attributes)
-        elif intent_name == 'RepeatRequest':
-            return self.handle_repeat_request(event, session_attributes)
-        elif intent_name == 'LocalOfficeInfo':
-            return self.handle_local_office_info(event, session_attributes)
-        elif intent_name == 'Finished':
-            return self.handle_finished(event)
-        elif intent_name == 'ReturnToMenu':
-            return self.handle_return_to_menu(event)
-        else:
-            return self.close_response(event, 'Fulfilled', 'Thank you for calling.')
-
-    def fulfill_locate_office(self, event, slots, session_attributes):
-        """Provide office information based on zip code and card needs"""
-        zip_code = self.get_slot_value(slots, 'zipCode')
-        needs_card = self.get_slot_value(slots, 'needsCard')
-
-        # Look up office information (would be actual API call)
-        office_info = self.lookup_office_info(zip_code)
-        card_center_info = self.lookup_card_center_info(zip_code)
-
-        # Store info in session for repeat requests
-        session_attributes['last_zip_code'] = zip_code
-        session_attributes['office_info'] = json.dumps(office_info)
-        session_attributes['card_center_info'] = (
-            json.dumps(card_center_info) if card_center_info else None
-        )
-
-        if needs_card and self.is_yes_response(needs_card) and card_center_info:
-            # P1122: Provide card center information
-            message = (
-                f'Alright. To apply for a new or replacement Social Security card, you will need to visit the card center '
-                f'in your area which is located at {card_center_info["address"]}. The hours of operation are, '
-                f'{card_center_info["hours"]}. And the phone number is {card_center_info["phone"]}.'
+            # Extract user data
+            zip_code = (
+                slots['zipCode']['value']['interpretedValue']
+                if slots.get('zipCode') and slots['zipCode'].get('value')
+                else session_attributes.get('zipCode')
             )
-            session_attributes['last_message_type'] = 'card_center'
-        else:
-            # P1112: Provide local office information
-            message = (
-                f'Okay, here is information for the servicing office in the zip code {zip_code}. '
-                f'The street address is {office_info["address"]}. The hours of operation are, '
-                f'{office_info["hours"]}. And the phone number is {office_info["phone"]}.'
+            needs_card = (
+                slots['needsCard']['value']['interpretedValue'].lower()
+                if slots.get('needsCard') and slots['needsCard'].get('value')
+                else session_attributes.get('needsCard', 'no').lower()
             )
-            session_attributes['last_message_type'] = 'local_office'
 
-        # Now ask what they want to do next
-        follow_up = (
-            'To hear that again, say repeat that. For information about the local Social Security office, say local office. '
-            'To search in a different zip code, say change zip code. Or if you are finished, just say, I am finished.'
-        )
+            if not zip_code:
+                return self.elicit_slot_response(
+                    'zipCode',
+                    'I need a zip code to provide office information. Please say or enter a five-digit zip code.',
+                    session_attributes,
+                    intent_object,
+                )
 
-        return self.elicit_intent_response(
-            event, message + ' ' + follow_up, session_attributes
-        )
+            # Validate zip code format
+            if not re.match(r'^\d{5}$', zip_code):
+                intent_object['slots']['zipCode'] = None
+                return self.elicit_slot_response(
+                    'zipCode',
+                    'That zip code is invalid. Please say a five-digit zip code, like 12345.',
+                    session_attributes,
+                    intent_object,
+                )
 
-    def fulfill_change_zip(self, event, slots, session_attributes):
-        """Handle new zip code search"""
-        new_zip_code = self.get_slot_value(slots, 'newZipCode')
-
-        # Transfer to LocateOffice intent with new zip code
-        return self.elicit_intent_with_specific_intent(
-            event,
-            'LocateOffice',
-            f'That zip code is {new_zip_code}. Right?',
-            session_attributes,
-        )
-
-    def handle_repeat_request(self, event, session_attributes):
-        """Handle repeat request"""
-        last_message_type = session_attributes.get('last_message_type')
-        office_info = json.loads(session_attributes.get('office_info', '{}'))
-        card_center_info = (
-            json.loads(session_attributes.get('card_center_info', '{}'))
-            if session_attributes.get('card_center_info')
-            else None
-        )
-
-        if last_message_type == 'card_center' and card_center_info:
-            message = (
-                f'Alright. To apply for a new or replacement Social Security card, you will need to visit the card center '
-                f'in your area which is located at {card_center_info["address"]}. The hours of operation are, '
-                f'{card_center_info["hours"]}. And the phone number is {card_center_info["phone"]}.'
+            # Mock API call to check if Card Center exists
+            card_center_in_zip_result = random.choice(
+                [True, True, True, True, True, False]
             )
-        elif last_message_type == 'local_office' and office_info:
-            zip_code = session_attributes.get('last_zip_code')
-            message = (
-                f'Okay, here is information for the servicing office in the zip code {zip_code}. '
-                f'The street address is {office_info["address"]}. The hours of operation are, '
-                f'{office_info["hours"]}. And the phone number is {office_info["phone"]}.'
+            if not card_center_in_zip_result and 'yes' in needs_card:
+                session_attributes.update({'zipCode': zip_code})
+                intent_object['slots']['zipCode'] = None
+                intent_object['slots']['confirmZip'] = None
+                intent_object['slots']['needsCard'] = None
+                intent_object['slots']['nextAction'] = None
+                return self.elicit_slot_response(
+                    'zipCode',
+                    f'No Social Security card center was found in {zip_code}. Please provide a different five-digit zip code.',
+                    session_attributes,
+                    intent_object,
+                )
+
+            # SUCCESS - provide info based on user needs
+            if 'yes' in needs_card:
+                message = f"Alright. To apply for a new or replacement Social Security card, you'll need to visit the card center in your area which is located at 123 Main St, City, State, {zip_code}. The hours of operation are, Monday through Friday 9 AM to 4 PM. "
+            else:
+                message = f'Here is information for the local Social Security office in zip code {zip_code}. The address is 456 Office St, City, State. Hours are Monday through Friday 9 AM to 4 PM. Phone is 1-800-555-0199. '
+
+            message += "To hear that again, say, repeat that. For information about the local Social Security office, say local office. To search a different zip code, say change zip code. Or if you're finished, just say, I'm finished."
+
+            session_attributes.update(
+                {'action': 'ReturnToMenu', 'zipCode': zip_code, 'needsCard': needs_card}
             )
-        else:
-            message = 'I am sorry, I do not have anything to repeat right now.'
 
-        follow_up = (
-            'To hear that again, say repeat that. Otherwise, to search a different zip code, say change zip code. '
-            'Or if you are finished, just say, I am finished.'
-        )
-
-        return self.elicit_intent_response(
-            event, message + ' ' + follow_up, session_attributes
-        )
-
-    def handle_local_office_info(self, event, session_attributes):
-        """Handle local office information request"""
-        zip_code = session_attributes.get('last_zip_code')
-        office_info = json.loads(session_attributes.get('office_info', '{}'))
-
-        if office_info and zip_code:
-            message = (
-                f'Okay, here is information for the servicing office in the zip code {zip_code}. '
-                f'The street address is {office_info["address"]}. The hours of operation are, '
-                f'{office_info["hours"]}. And the phone number is {office_info["phone"]}.'
+            return self.close_response(
+                intent_name=intent_name,
+                message=message,
+                session_attributes=session_attributes,
             )
-        else:
-            message = 'I do not have office information available right now.'
 
-        follow_up = (
-            'To hear that again, say repeat that. Otherwise, to search a different zip code, say change zip code. '
-            'Or if you are finished, just say, I am finished.'
-        )
-
-        return self.elicit_intent_response(
-            event, message + ' ' + follow_up, session_attributes
-        )
-
-    def handle_finished(self, event):
-        """Handle when user is finished"""
-        session_attributes = {'action': 'ReturnToMainMenu'}
+        # Fallback for unexpected intents
         return self.close_response(
-            event,
-            'Fulfilled',
-            'Thank you for using our office locator service.',
-            session_attributes,
+            intent_name=intent_name,
+            message="Sorry, I didn’t understand. Please say 'office' to locate an office.",
+            session_attributes=session_attributes,
         )
 
-    def handle_return_to_menu(self, event):
-        """Handle return to main menu"""
-        session_attributes = {'action': 'ReturnToMainMenu'}
-        return self.close_response(
-            event, 'Fulfilled', 'Returning you to the main menu.', session_attributes
-        )
-
-    # Validation and lookup helper methods
-    def is_valid_zip_code(self, zip_code: str) -> bool:
-        """Validate zip code format"""
+    def repeat_response(self, session_attributes, intent_object):
+        """Repeat the last office info using stored zipCode and needsCard"""
+        zip_code = session_attributes.get('zipCode')
+        needs_card = session_attributes.get('needsCard', 'no').lower()
         if not zip_code:
-            return False
+            return self.elicit_slot_response(
+                'zipCode',
+                "I don't have a zip code to repeat. Please provide a five-digit zip code.",
+                session_attributes,
+                {
+                    'name': 'LocateOffice',
+                    'slots': {
+                        'zipCode': None,
+                        'needsCard': None,
+                        'confirmZip': None,
+                        'nextAction': None,
+                    },
+                },
+            )
+        if 'yes' in needs_card:
+            message = f"Alright. To apply for a new or replacement Social Security card, you'll need to visit the card center in your area which is located at 123 Main St, City, State, {zip_code}. The hours of operation are, Monday through Friday 9 AM to 4 PM. "
+        else:
+            message = f'Here is information for the local Social Security office in zip code {zip_code}. The address is 456 Office St, City, State. Hours are Monday through Friday 9 AM to 4 PM. Phone is 1-800-555-0199. '
+        message += "To hear that again, say, repeat that. For information about the local Social Security office, say local office. To search a different zip code, say change zip code. Or if you're finished, just say, I'm finished."
+        return self.close_response(
+            intent_name='LocateOffice',
+            message=message,
+            session_attributes=session_attributes,
+        )
 
-        # Remove any non-digits
-        digits_only = re.sub(r'\D', '', str(zip_code))
+    def local_office_info_response(self, session_attributes, intent_object):
+        """Provide local office info using stored zipCode"""
+        zip_code = session_attributes.get('zipCode')
+        if not zip_code:
+            return self.elicit_slot_response(
+                'zipCode',
+                'Please provide a five-digit zip code for the local office information.',
+                session_attributes,
+                {
+                    'name': 'LocateOffice',
+                    'slots': {
+                        'zipCode': None,
+                        'needsCard': None,
+                        'confirmZip': None,
+                        'nextAction': None,
+                    },
+                },
+            )
+        message = f'Here is information for the local Social Security office in zip code {zip_code}. The address is 456 Office St, City, State. Hours are Monday through Friday 9 AM to 4 PM. Phone is 1-800-555-0199. '
+        message += "To hear that again, say, repeat that. To search a different zip code, say change zip code. Or if you're finished, just say, I'm finished."
+        return self.close_response(
+            intent_name='LocateOffice',
+            message=message,
+            session_attributes=session_attributes,
+        )
 
-        # Must be exactly 5 digits
-        return len(digits_only) == 5 and digits_only.isdigit()
+    def finished_response(self, session_attributes, intent_object):
+        """End the session"""
+        return self.close_response(
+            intent_name='Finished',
+            message='Goodbye.',
+            session_attributes=session_attributes,
+        )
 
-    def is_yes_response(self, response: str) -> bool:
-        """Check if response indicates yes"""
-        if not response:
-            return False
-
-        response = response.lower().strip()
-        yes_words = [
-            'yes',
-            'yeah',
-            'yep',
-            'correct',
-            'right',
-            'true',
-            'y',
-            'sure',
-            'okay',
-            'ok',
-        ]
-        return response in yes_words
-
-    def check_card_center_availability(self, zip_code: str) -> bool:
-        """Check if card center is available in zip code"""
-        # TODO: Implement actual API call
-        # For now, simulate that some zip codes have card centers
-        return int(zip_code) % 2 == 0  # Even zip codes have card centers
-
-    def lookup_office_info(self, zip_code: str) -> Dict[str, str]:
-        """Look up office information for zip code"""
-        # TODO: Implement actual API call
-        # For now, return mock data
+    def return_to_menu_response(self, session_attributes, intent_object):
+        """Return to main menu"""
+        session_attributes.update({'action': 'ReturnToMenu'})
         return {
-            'address': f'123 Main Street, City {zip_code}',
-            'hours': 'Monday through Friday, 9 AM to 4 PM',
-            'phone': '1-800-772-1213',
+            'sessionState': {
+                'dialogAction': {'type': 'ElicitIntent'},
+                'intent': None,
+                'sessionAttributes': session_attributes,
+            },
+            'messages': [
+                {
+                    'contentType': 'PlainText',
+                    'content': 'Returning to the main menu. How can I assist you now?',
+                }
+            ],
         }
 
-    def lookup_card_center_info(self, zip_code: str) -> Dict[str, str]:
-        """Look up card center information for zip code"""
-        if not self.check_card_center_availability(zip_code):
-            return None
-
-        # TODO: Implement actual API call
-        # For now, return mock data
-        return {
-            'address': f'456 Card Center Drive, City {zip_code}',
-            'hours': 'Monday through Friday, 9 AM to 3 PM',
-            'phone': '1-800-772-1213',
-        }
-
-    def get_slot_value(self, slots, slot_name):
-        """Get the interpreted value of a slot"""
-        slot = slots.get(slot_name)
-        if slot and slot.get('value'):
-            return slot['value'].get('interpretedValue', '')
-        return None
-
-    # Helper methods for Lex responses
     def get_intent_name(self, event):
+        """Extract intent name from event"""
         return event.get('sessionState', {}).get('intent', {}).get('name', '')
 
     def get_slots(self, event):
+        """Extract slots from event"""
         return event.get('sessionState', {}).get('intent', {}).get('slots', {})
 
-    def delegate_response(self, event):
+    def get_session_attributes(self, event):
+        """Extract session attributes from event"""
+        return event.get('sessionState', {}).get('sessionAttributes', {})
+
+    ### Helper functions to build Lex responses ###
+
+    def elicit_slot_response(self, slot_name, message, session_attributes, intent):
+        """Build "ask for slot" response"""
+        return {
+            'sessionState': {
+                'dialogAction': {'type': 'ElicitSlot', 'slotToElicit': slot_name},
+                'intent': intent,
+                'sessionAttributes': session_attributes,
+            },
+            'messages': [{'contentType': 'PlainText', 'content': message}],
+        }
+
+    def delegate_response(self, session_attributes, intent_object):
+        """Build "let Lex continue" response"""
         return {
             'sessionState': {
                 'dialogAction': {'type': 'Delegate'},
-                'intent': event.get('sessionState', {}).get('intent', {}),
-                'sessionAttributes': event.get('sessionAttributes', {}),
+                'intent': intent_object,
+                'sessionAttributes': session_attributes,
             }
         }
 
-    def elicit_slot_response(self, event, slot_name, message):
-        return {
-            'sessionState': {
-                'dialogAction': {'type': 'ElicitSlot', 'slotToElicit': slot_name},
-                'intent': event.get('sessionState', {}).get('intent', {}),
-                'sessionAttributes': event.get('sessionAttributes', {}),
-            },
-            'messages': [{'contentType': 'PlainText', 'content': message}],
-        }
-
-    def clear_slot_and_elicit(self, event, slot_name, message, slots_to_clear=None):
-        """Clear specified slots and elicit a new one"""
-        current_intent = event.get('sessionState', {}).get('intent', {})
-        current_slots = current_intent.get('slots', {}).copy()
-
-        # Clear specified slots
-        if slots_to_clear:
-            for slot_to_clear in slots_to_clear:
-                current_slots[slot_to_clear] = None
-
-        return {
-            'sessionState': {
-                'dialogAction': {'type': 'ElicitSlot', 'slotToElicit': slot_name},
-                'intent': {**current_intent, 'slots': current_slots},
-                'sessionAttributes': event.get('sessionAttributes', {}),
-            },
-            'messages': [{'contentType': 'PlainText', 'content': message}],
-        }
-
-    def elicit_intent_response(self, event, message, session_attributes=None):
-        return {
-            'sessionState': {
-                'dialogAction': {'type': 'ElicitIntent'},
-                'sessionAttributes': session_attributes
-                or event.get('sessionAttributes', {}),
-            },
-            'messages': [{'contentType': 'PlainText', 'content': message}],
-        }
-
-    def elicit_intent_with_specific_intent(
-        self, event, intent_name, message, session_attributes=None
-    ):
-        return {
-            'sessionState': {
-                'dialogAction': {'type': 'ElicitIntent'},
-                'sessionAttributes': session_attributes
-                or event.get('sessionAttributes', {}),
-                'intent': {'name': intent_name, 'state': 'InProgress', 'slots': {}},
-            },
-            'messages': [{'contentType': 'PlainText', 'content': message}],
-        }
-
-    def close_response(
-        self, event, fulfillment_state, message, session_attributes=None
-    ):
-        # Get current intent but fix the state for Close action
-        current_intent = event.get('sessionState', {}).get('intent', {}).copy()
-        current_intent['state'] = (
-            'Fulfilled' if fulfillment_state == 'Fulfilled' else 'Failed'
-        )
-
+    def close_response(self, message, intent_name, session_attributes):
+        """Build "conversation finished" response"""
         return {
             'sessionState': {
                 'dialogAction': {'type': 'Close'},
-                'fulfillmentState': fulfillment_state,
-                'sessionAttributes': session_attributes
-                or event.get('sessionAttributes', {}),
-                'intent': current_intent,
+                'intent': {
+                    'name': intent_name,
+                    'state': 'Fulfilled',  # or 'Failed'
+                },
+                'sessionAttributes': session_attributes,
             },
             'messages': [{'contentType': 'PlainText', 'content': message}],
         }
@@ -437,3 +431,41 @@ handler_instance = OfficeLocatorHandler()
 def handler(event, context=None):
     """Lambda handler function"""
     return handler_instance.handler(event, context)
+
+
+# P1110: Initial zipcode collection
+# 'Okay, office information. One moment. Go ahead and say or enter the five digit zip code for your area or the area where you want to find an office.'
+
+# P1118: Zipcode confirmation (conditional)
+# 'That zip code is {zipCode}. Right?'
+
+# P1121: Card center question (conditional)
+# 'Thanks. Do you need to get a Social Security card?'
+
+# P1122: Next action (conditional)
+# 'To hear that again, say repeat that. For information about the local Social Security office, say local office. To search in a different zip code, say change zip code. Or if you are finished, just say, I am finished.'
+
+# P1123: New zip code collection
+# 'Alright, let us look somewhere else. What is the zip code?'
+
+
+# if last_message_type == 'card_center' and card_center_info:
+#     message = (
+#         f'Alright. To apply for a new or replacement Social Security card, you will need to visit the card center '
+#         f'in your area which is located at {card_center_info["address"]}. The hours of operation are, '
+#         f'{card_center_info["hours"]}. And the phone number is {card_center_info["phone"]}.'
+#     )
+# elif last_message_type == 'local_office' and office_info:
+#     zip_code = session_attributes.get('last_zip_code')
+#     message = (
+#         f'Okay, here is information for the servicing office in the zip code {zip_code}. '
+#         f'The street address is {office_info["address"]}. The hours of operation are, '
+#         f'{office_info["hours"]}. And the phone number is {office_info["phone"]}.'
+#     )
+# else:
+#     message = 'I am sorry, I do not have anything to repeat right now.'
+
+# follow_up = (
+#     'To hear that again, say repeat that. Otherwise, to search a different zip code, say change zip code. '
+#     'Or if you are finished, just say, I am finished.'
+# )

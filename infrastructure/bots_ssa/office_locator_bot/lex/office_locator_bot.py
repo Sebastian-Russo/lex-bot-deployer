@@ -73,15 +73,17 @@ class OfficeLocatorBot(Construct):
                             'office lookup',
                             'locate office',
                             'office locator',
+                            'change zip code',
+                            'different zip code',
+                            'new zip code',
+                            'search somewhere else',
+                            'look somewhere else',
                         ],
                         slots=[
-                            # P1110: Initial zipcode collection
                             SimpleSlot(
                                 name='zipCode',
                                 slot_type_name='AMAZON.Number',
-                                elicitation_messages=[
-                                    'Okay, office information. One moment. Go ahead and say or enter the five digit zip code for your area or the area where you want to find an office.'
-                                ],
+                                elicitation_messages=['Placeholder'],
                                 description='Five digit zip code for office search',
                                 required=True,
                                 max_retries=3,
@@ -91,9 +93,7 @@ class OfficeLocatorBot(Construct):
                             SimpleSlot(
                                 name='confirmZip',
                                 slot_type_name='AMAZON.AlphaNumeric',
-                                elicitation_messages=[
-                                    'That zip code is {zipCode}. Right?'
-                                ],
+                                elicitation_messages=['Placeholder'],
                                 description='Confirmation of entered zip code',
                                 required=False,  # Conditional based on validation
                                 max_retries=2,
@@ -103,9 +103,7 @@ class OfficeLocatorBot(Construct):
                             SimpleSlot(
                                 name='needsCard',
                                 slot_type_name='AMAZON.AlphaNumeric',
-                                elicitation_messages=[
-                                    'Thanks. Do you need to get a Social Security card?'
-                                ],
+                                elicitation_messages=['Placeholder'],
                                 description='Whether user needs Social Security card',
                                 required=False,  # Only asked if card center available
                                 max_retries=2,
@@ -115,36 +113,10 @@ class OfficeLocatorBot(Construct):
                             SimpleSlot(
                                 name='nextAction',
                                 slot_type_name='AMAZON.AlphaNumeric',
-                                elicitation_messages=[
-                                    'To hear that again, say repeat that. For information about the local Social Security office, say local office. To search in a different zip code, say change zip code. Or if you are finished, just say, I am finished.'
-                                ],
+                                elicitation_messages=['Placeholder'],
                                 description='What user wants to do next',
                                 required=False,  # Asked after providing office info
                                 max_retries=2,
-                                allow_interrupt=True,
-                            ),
-                        ],
-                    ),
-                    # Intent for changing zip code (when user says "change zip code")
-                    SimpleIntent(
-                        name='ChangeZipCode',
-                        utterances=[
-                            'change zip code',
-                            'different zip code',
-                            'new zip code',
-                            'search somewhere else',
-                            'look somewhere else',
-                        ],
-                        slots=[
-                            SimpleSlot(
-                                name='newZipCode',
-                                slot_type_name='AMAZON.Number',
-                                elicitation_messages=[
-                                    'Alright, let us look somewhere else. What is the zip code?'
-                                ],
-                                description='New zip code for office search',
-                                required=True,
-                                max_retries=3,
                                 allow_interrupt=True,
                             ),
                         ],

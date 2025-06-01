@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 from typing import Any, Dict
 
 logger = logging.getLogger()
@@ -163,9 +164,6 @@ class MedicareCardReplacementHandler:
             dob = slots['dateOfBirth']['value']['interpretedValue']
             first_name = slots['firstName']['value']['interpretedValue']
             last_name = slots['lastName']['value']['interpretedValue']
-
-            # Mock authentication - randomly return different results for testing
-            import random
 
             auth_result = random.choice(['SUCCESS', 'BLOCKED', 'FAILED'])
 
