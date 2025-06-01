@@ -177,8 +177,7 @@ class MedicareCardReplacementHandler:
                 }
             )
             return self.close_response(
-                intent_name=intent_name,            session_attributes['action'] = 'TransferToAgent'
-            session_attributes['reason'] = 'AuthenticationFailed'
+                intent_name=intent_name,
                 # P1003 (In-Hour)
                 message="According to our records, you asked that this automated system and our website block access to your account, so you'll need to speak to someone. By the way, if you want to unblock your account, the agent can help you do that as well. Hold on while I get someone to help you.",
                 # P1003 (Out-Hour)
