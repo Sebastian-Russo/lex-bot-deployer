@@ -155,24 +155,89 @@ class MedicareCardReplacementHandler:
         logger.info('>>>>>>>> Fulfillment hook called')
         intent_name = self.get_intent_name(event)
         slots = self.get_slots(event)
+        session_attributes = self.get_session_attributes(event)
 
         if intent_name == 'ProcessMedicareCardReplacement':
-            name_first = slots.get('firstName')
-            name_last = slots.get('lastName')
-            dob = slots.get('dob')
-            ssn = slots.get('socialSecurityNumber')
+            # Extract user data
+            ssn = slots['socialSecurityNumber']['value']['interpretedValue']
+            dob = slots['dateOfBirth']['value']['interpretedValue']
+            first_name = slots['firstName']['value']['interpretedValue']
+            last_name = slots['lastName']['value']['interpretedValue']
 
-            # TODO: Call authentication API with user info
-            # Handle authentication results:
-            # SUCCESS → Call Medicare replacement API
-            # BLOCKED → Set session attributes for agent transfer
-            # FAILED → Set session attributes for agent transfer
+        # Mock authentication - randomly return different results for testing
+        import random
 
-            # TODO: Handle Medicare API results:
-            # SUCCESS → Return success message
-            # FAILED → Set session attributes for agent transfer
+        auth_result = random.choice(['SUCCESS', 'BLOCKED', 'FAILED'])
 
-            return
+        if auth_result == 'BLOCKED':
+            session_attributes.update(
+                {
+                    'action': 'TransferToAgent',
+                    'reason': 'AccountBlocked',
+                }
+            )
+            return self.close_response(
+                intent_name=intent_name,            session_attributes['action'] = 'TransferToAgent'
+            session_attributes['reason'] = 'AuthenticationFailed'
+                # P1003 (In-Hour)
+                message="According to our records, you asked that this automated system and our website block access to your account, so you'll need to speak to someone. By the way, if you want to unblock your account, the agent can help you do that as well. Hold on while I get someone to help you.",
+                # P1003 (Out-Hour)
+                # message="According to our records, you asked that this automated system and our website block access to your account, so you'll need to speak to someone. By the way, if you want to unblock your account, the agent can help you do that as well. Unfortunately.",
+                session_attributes=session_attributes,
+            )
+
+        elif auth_result == 'FAILED':
+            session_attributes.update(
+                {
+                    'action': 'TransferToAgent',
+                    'reason': 'AuthenticationFailed',
+                    'processingStage': 'authentication',
+                    'userSSN': ssn[-4:],  # Last 4 digits
+                }
+            )
+            return self.close_response(
+                intent_name=intent_name,
+                # P9011 (In-Hour)
+                message="Sorry, I'm having trouble processing this request. Hold on while I get someone to help you.",
+                # P9011 (Out-Hour)
+                # message="Sorry, I'm having trouble processing this request. Unfortunately.",
+                session_attributes=session_attributes,
+            )
+
+        elif auth_result == 'SUCCESS':
+            # Mock Medicare API
+            medicare_result = random.choice(['SUCCESS', 'FAILED'])
+
+            if medicare_result == 'FAILED':
+                session_attributes.update(
+                    {
+                        'action': 'TransferToAgent',
+                        'reason': 'ProcessingError',
+                        'processingStage': 'medicare',
+                        'userSSN': ssn[-4:],  # Last 4 digits
+                    }
+                )
+                return self.close_response(
+                    intent_name=intent_name,
+                    # P9012 (In-Hour)
+                    message="Sorry, I'm having trouble processing this request. Hold on while I get someone to help you.",
+                    # P9012 (Out-Hour)
+                    # message="Sorry, I'm having trouble processing this request. Unfortunately.",
+                    session_attributes=session_attributes,
+                )
+
+            else:  # SUCCESS
+                session_attributes.update(
+                    {
+                        'action': 'ReturnToMenu',
+                    }
+                )
+                return self.close_response(
+                    intent_name=intent_name,
+                    # P1047
+                    message="Alright. We're all set. You should receive your replacement Medicare card in the mail within four weeks. If you're finished, feel free to hang up. Otherwise, just hang on and I'll take you back to the Main Menu.",
+                    session_attributes=session_attributes,
+                )
         return
 
     ### Helper functions to extract data from Lex event ###
@@ -209,7 +274,14 @@ class MedicareCardReplacementHandler:
                 'dialogAction': {'type': 'Delegate'},
                 'intent': intent_object,
                 'sessionAttributes': session_attributes,
-            }
+            },
+            'messages': [
+                {
+                    'contentType': 'PlainText',
+                    # P1046
+                    'content': "Thank you. I've got everything I need. Hold on while I submit this.",
+                }
+            ],
         }
 
     def close_response(self, message, intent_name, session_attributes):
