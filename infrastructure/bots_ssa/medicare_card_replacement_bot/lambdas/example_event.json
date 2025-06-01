@@ -24,7 +24,7 @@
             "interpretationSource": "Lex",
             "nluConfidence": 0.51,
             "intent": {
-                "name": "PrivacyInformation",
+                "name": "MorePrivacyInformation",
                 "slots": {},
                 "state": "InProgress",
                 "confirmationState": "None"

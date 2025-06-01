@@ -220,7 +220,7 @@ class MedicareCardReplacementBot(Construct):
                     ),
                     # Supporting intent for privacy information
                     SimpleIntent(
-                        name='PrivacyInformation',
+                        name='MorePrivacyInformation',
                         utterances=[
                             'more information',
                             'privacy act information',
