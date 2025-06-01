@@ -1,0 +1,101 @@
+{
+    "inputMode": "Text",
+    "sessionId": "30866591864882",
+    "inputTranscript": "medicare",
+    "interpretations": [
+        {
+            "interpretationSource": "Lex",
+            "nluConfidence": 1,
+            "intent": {
+                "name": "ProcessMedicareCardReplacement",
+                "slots": {
+                    "firstName": null,
+                    "lastName": null,
+                    "termsAgreement": null,
+                    "socialSecurityNumber": null,
+                    "privacyAcknowledgment": null,
+                    "dateOfBirth": null
+                },
+                "state": "InProgress",
+                "confirmationState": "None"
+            }
+        },
+        {
+            "interpretationSource": "Lex",
+            "nluConfidence": 0.51,
+            "intent": {
+                "name": "PrivacyInformation",
+                "slots": {},
+                "state": "InProgress",
+                "confirmationState": "None"
+            }
+        },
+        {
+            "interpretationSource": "Lex",
+            "intent": {
+                "name": "FallbackIntent",
+                "slots": {},
+                "state": "InProgress",
+                "confirmationState": "None"
+            }
+        },
+        {
+            "interpretationSource": "Lex",
+            "nluConfidence": 0.38,
+            "intent": {
+                "name": "Finished",
+                "slots": {},
+                "state": "InProgress",
+                "confirmationState": "None"
+            }
+        },
+        {
+            "interpretationSource": "Lex",
+            "nluConfidence": 0.35,
+            "intent": {
+                "name": "ReturnToMenu",
+                "slots": {},
+                "state": "InProgress",
+                "confirmationState": "None"
+            }
+        }
+    ],
+    "bot": {
+        "name": "lex-deploy-demo-py-medicare-card-replacement",
+        "version": "DRAFT",
+        "localeId": "en_US",
+        "id": "EXWQCDNQF1",
+        "aliasId": "TSTALIASID",
+        "aliasName": "TestBotAlias"
+    },
+    "responseContentType": "text/plain; charset=utf-8",
+    "messageVersion": "1.0",
+    "sessionState": {
+        "originatingRequestId": "3a1d9ee2-3b57-404c-b6b1-fe27821d74a0",
+        "sessionAttributes": {},
+        "intent": {
+            "name": "ProcessMedicareCardReplacement",
+            "slots": {
+                "firstName": null,
+                "lastName": null,
+                "termsAgreement": null,
+                "socialSecurityNumber": null,
+                "privacyAcknowledgment": null,
+                "dateOfBirth": null
+            },
+            "state": "InProgress",
+            "confirmationState": "None"
+        }
+    },
+    "invocationSource": "DialogCodeHook",
+    "transcriptions": [
+        {
+            "resolvedContext": {
+                "intent": "ProcessMedicareCardReplacement"
+            },
+            "resolvedSlots": {},
+            "transcriptionConfidence": 1,
+            "transcription": "medicare"
+        }
+    ]
+}

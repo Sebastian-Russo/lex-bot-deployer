@@ -2,7 +2,6 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-import boto3
 from aws_cdk import aws_iam as iam
 from constructs import Construct
 
@@ -20,8 +19,8 @@ logger = logging.getLogger()
 logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
 
 # Mock SSA API clients (replace with actual implementation)
-ssa_auth_client = boto3.client('lambda')  # Replace with actual SSA API client
-ssa_medicare_client = boto3.client('lambda')  # Replace with actual Medicare API client
+# ssa_auth_client = boto3.client('lambda')  # Replace with actual SSA API client
+# ssa_medicare_client = boto3.client('lambda')  # Replace with actual Medicare API client
 
 
 class LexHelper:
@@ -162,25 +161,19 @@ class MedicareCardReplacementBot(Construct):
                             'request medicare card',
                         ],
                         slots=[
-                            # P1173: Privacy acknowledgment choice
                             SimpleSlot(
                                 name='privacyAcknowledgment',
                                 slot_type_name='AMAZON.AlphaNumeric',
-                                elicitation_messages=[
-                                    'Before I can access your records, I will need to ask a question or two to verify who you are. Social Security is allowed to collect this information under the Social Security Act and the collect meets the requirements of the Paperwork Reduction Act under OMB number 0 9 6 0 0 5 9 6. The whole process should take about four minutes. To hear detailed information about the Privacy Act or Paperwork Reduction Act, say more information. Otherwise, say continue.'
-                                ],
+                                elicitation_messages=['Placeholder'],
                                 description='User choice to continue or get more privacy information',
                                 required=False,  # Dialog hook controls when to ask
                                 max_retries=2,
                                 allow_interrupt=True,
                             ),
-                            # P1010: Terms agreement
                             SimpleSlot(
                                 name='termsAgreement',
                                 slot_type_name='AMAZON.AlphaNumeric',
-                                elicitation_messages=[
-                                    'Please note that any person who makes a false representation in an effort to alter or obtain information from the Social Security Administration may be punished by a fine or imprisonment or both. Do you understand and agree to these terms?'
-                                ],
+                                elicitation_messages=['Placeholder'],
                                 description='User agreement to terms and conditions',
                                 required=False,  # Only asked after privacy acknowledgment
                                 max_retries=2,
@@ -190,9 +183,7 @@ class MedicareCardReplacementBot(Construct):
                             SimpleSlot(
                                 name='socialSecurityNumber',
                                 slot_type_name='AMAZON.Number',
-                                elicitation_messages=[
-                                    'Please provide your Social Security number.'
-                                ],
+                                elicitation_messages=['Placeholder'],
                                 description='Social Security Number for verification',
                                 required=False,  # Only after terms agreement
                                 max_retries=3,
@@ -201,9 +192,7 @@ class MedicareCardReplacementBot(Construct):
                             SimpleSlot(
                                 name='dateOfBirth',
                                 slot_type_name='AMAZON.Date',
-                                elicitation_messages=[
-                                    'Please provide your date of birth.'
-                                ],
+                                elicitation_messages=['Placeholder'],
                                 description='Date of birth for verification',
                                 required=False,  # Only after SSN success
                                 max_retries=3,
@@ -212,9 +201,7 @@ class MedicareCardReplacementBot(Construct):
                             SimpleSlot(
                                 name='firstName',
                                 slot_type_name='AMAZON.FirstName',
-                                elicitation_messages=[
-                                    'Please provide your first name.'
-                                ],
+                                elicitation_messages=['Placeholder'],
                                 description='First name for verification',
                                 required=False,  # Only after DOB success
                                 max_retries=3,
@@ -223,7 +210,7 @@ class MedicareCardReplacementBot(Construct):
                             SimpleSlot(
                                 name='lastName',
                                 slot_type_name='AMAZON.LastName',
-                                elicitation_messages=['Please provide your last name.'],
+                                elicitation_messages=['Placeholder'],
                                 description='Last name for verification',
                                 required=False,  # Only after first name success
                                 max_retries=3,
