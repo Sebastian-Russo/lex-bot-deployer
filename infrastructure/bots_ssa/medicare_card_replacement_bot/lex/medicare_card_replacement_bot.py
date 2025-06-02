@@ -125,10 +125,7 @@ class MedicareCardReplacementBot(Construct):
             os.path.join(os.path.dirname(__file__), '..', 'lambdas'),
             function_name=f'{bot_name}-handler',
             description='Handles Medicare card replacement conversation flow',
-            environment={
-                'SSA_API_ENDPOINT': 'https://api.ssa.gov/medicare-replacement',
-                'AUTH_API_ENDPOINT': 'https://api.ssa.gov/auth',
-            },
+            environment={},
         )
 
         locales: List[SimpleLocale] = [
@@ -163,7 +160,7 @@ class MedicareCardReplacementBot(Construct):
                         slots=[
                             SimpleSlot(
                                 name='privacyAcknowledgment',
-                                slot_type_name='AMAZON.AlphaNumeric',
+                                slot_type_name='AMAZON.Confirmation',
                                 elicitation_messages=['Placeholder'],
                                 description='User choice to continue or get more privacy information',
                                 required=False,  # Dialog hook controls when to ask
@@ -172,7 +169,7 @@ class MedicareCardReplacementBot(Construct):
                             ),
                             SimpleSlot(
                                 name='termsAgreement',
-                                slot_type_name='AMAZON.AlphaNumeric',
+                                slot_type_name='AMAZON.Confirmation',
                                 elicitation_messages=['Placeholder'],
                                 description='User agreement to terms and conditions',
                                 required=False,  # Only asked after privacy acknowledgment

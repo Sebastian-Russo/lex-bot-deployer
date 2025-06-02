@@ -11,6 +11,12 @@
       "pre_transfer_prompt": "Okay, Office Locator. One moment.",
       "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/f378725b-f83d-40c0-95fc-a6aa44940ef9"
     },
+    "MEDICARE_CARD_REPLACEMENT": {
+      "type": "FlowTransfer",
+      "custom_handler": null,
+      "pre_transfer_prompt": "Ok, Medicare Replacement Card. One moment. Did you know you can request a Replacement Medicare Card by going online and using your My S S A account? Go to w w w dot social security dot g o v and select Sign in.",
+      "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/cd58671d-abc3-4625-ba27-b4e98fde2fcf"
+    },
     "1099_REPRINT": {
       "type": "FlowTransfer",
       "custom_handler": null,
@@ -22,12 +28,6 @@
       "custom_handler": null,
       "pre_transfer_prompt": "",
       "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/4d3bf4e8-f1ff-4808-9de9-cfd2206984c4"
-    },
-    "MEDICARE_CARD_REPLACEMENT": {
-      "type": "FlowTransfer",
-      "custom_handler": null,
-      "pre_transfer_prompt": "Ok, Medicare Replacement Card. One moment. Did you know you can request a Replacement Medicare Card by going online and using your My S S A account? Go to w w w dot social security dot g o v and select Sign in.",
-      "contact_flow_arn": "arn:aws:connect:us-east-1:308665918648:instance/ee5e36fa-330b-4a91-995d-c218d84b8fea/contact-flow/cd58671d-abc3-4625-ba27-b4e98fde2fcf"
     },
     "MEDICARE_ENROLLMENT": {
       "type": "FlowTransfer",

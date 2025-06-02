@@ -78,6 +78,20 @@ class SSAMenuBot(Construct):
                             pre_transfer_prompt='Okay, Office Locator. One moment.',
                         ),
                     ),
+                    'MEDICARE_CARD_REPLACEMENT': MenuItem(
+                        utterances=[
+                            'Medicare card replacement.',
+                            'I want to replace my medicare card.',
+                            'I need a new medicare card.',
+                            'I need to replace my medicare card.',
+                        ],
+                        confirmation='I heard you need a new medicare card, is that correct?',
+                        action=FlowTransferAction(
+                            type='FlowTransfer',
+                            contact_flow_arn=medicare_card_replacement_flow_arn,
+                            pre_transfer_prompt='Ok, Medicare Replacement Card. One moment. Did you know you can request a Replacement Medicare Card by going online and using your My S S A account? Go to w w w dot social security dot g o v and select Sign in.',  # prompt P1045, also after is prompt P1173, not included here
+                        ),
+                    ),
                     '1099_REPRINT': MenuItem(
                         utterances=[
                             'I would like to print a 10 99.',
@@ -109,20 +123,6 @@ class SSAMenuBot(Construct):
                             type='FlowTransfer',
                             contact_flow_arn=pamphlet_flow_arn,
                             pre_transfer_prompt='',
-                        ),
-                    ),
-                    'MEDICARE_CARD_REPLACEMENT': MenuItem(
-                        utterances=[
-                            'Medicare card replacement.',
-                            'I want to replace my medicare card.',
-                            'I need a new medicare card.',
-                            'I need to replace my medicare card.',
-                        ],
-                        confirmation='I heard you need a new medicare card, is that correct?',
-                        action=FlowTransferAction(
-                            type='FlowTransfer',
-                            contact_flow_arn=medicare_card_replacement_flow_arn,
-                            pre_transfer_prompt='Ok, Medicare Replacement Card. One moment. Did you know you can request a Replacement Medicare Card by going online and using your My S S A account? Go to w w w dot social security dot g o v and select Sign in.',  # prompt P1045, also after is prompt P1173, not included here
                         ),
                     ),
                     'MEDICARE_ENROLLMENT': MenuItem(

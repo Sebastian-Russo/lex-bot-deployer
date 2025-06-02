@@ -55,20 +55,24 @@ Sorry, I'm having trouble processing this request. Normally I'd get an agent to 
 P1121: Card center question (conditional)
 Thanks. Do you need to get a Social Security card?
 
+**Response to newSSNCard**
+
+**yes**
 P1122
 All right. To apply for a new or replacement Social Security card, you will need to visit the card center in your area which is located at {address}. The hours of operation are, {hours}. And the phone number is {phone}.
 
+**Slot** => repeat
 P1123: To hear that again, say repeat that. For information about the local Social Security office, say local office. To search in a different zip code, say change zip code.Or if you're finished, just say, I'm finished.
 
-P1112:
-To hear that again, say repeat that. For information about the local Social Security office, say local office. To search in a different zip code, say change zip code.Or if you're finished, just say, I'm finished.
+**Slot** => finished
+End of conversation.
 
 **Slot** => repeat
 P1113a:
 Let's try again. You can say Repeat That, Change Zip Code, or Finished.
 
-P1113b:
-Sorry. If you'd like to hear that information again, press 1. Otherwise, to search for a local office using a different zip code, press 2. Or, if you're finished, press 3.
+<!-- P1113b:
+Sorry. If you'd like to hear that information again, press 1. Otherwise, to search for a local office using a different zip code, press 2. Or, if you're finished, press 3. -->
 
 **Slot** => More information
 P0000 (not real)

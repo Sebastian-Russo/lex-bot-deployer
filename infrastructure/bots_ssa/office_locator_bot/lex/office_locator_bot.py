@@ -92,7 +92,7 @@ class OfficeLocatorBot(Construct):
                             # P1118: Zipcode confirmation (conditional)
                             SimpleSlot(
                                 name='confirmZip',
-                                slot_type_name='AMAZON.AlphaNumeric',
+                                slot_type_name='AMAZON.Confirmation',
                                 elicitation_messages=['Placeholder'],
                                 description='Confirmation of entered zip code',
                                 required=False,  # Conditional based on validation
@@ -102,7 +102,7 @@ class OfficeLocatorBot(Construct):
                             # P1121: Card center question (conditional)
                             SimpleSlot(
                                 name='needsCard',
-                                slot_type_name='AMAZON.AlphaNumeric',
+                                slot_type_name='AMAZON.Confirmation',
                                 elicitation_messages=['Placeholder'],
                                 description='Whether user needs Social Security card',
                                 required=False,  # Only asked if card center available
@@ -122,46 +122,35 @@ class OfficeLocatorBot(Construct):
                         ],
                     ),
                     # Utility intents
-                    SimpleIntent(
-                        name='RepeatRequest',
-                        utterances=[
-                            'repeat that',
-                            'say that again',
-                            'can you repeat',
-                            'what did you say',
-                            "I didn't hear that",
-                            'repeat',
-                        ],
-                    ),
-                    SimpleIntent(
-                        name='LocalOfficeInfo',
-                        utterances=[
-                            'local office',
-                            'local office information',
-                            'tell me about local office',
-                            'local office info',
-                        ],
-                    ),
-                    SimpleIntent(
-                        name='Finished',
-                        utterances=[
-                            'I am finished',
-                            'finished',
-                            'done',
-                            'that is all',
-                            'thank you',
-                        ],
-                    ),
-                    SimpleIntent(
-                        name='ReturnToMenu',
-                        utterances=[
-                            'go back to main menu',
-                            'return to menu',
-                            'main menu',
-                            'go back',
-                            'menu',
-                        ],
-                    ),
+                    # SimpleIntent(
+                    #     name='LocalOfficeInfo',
+                    #     utterances=[
+                    #         'local office',
+                    #         'local office information',
+                    #         'tell me about local office',
+                    #         'local office info',
+                    #     ],
+                    # ),
+                    # SimpleIntent(
+                    #     name='Finished',
+                    #     utterances=[
+                    #         'I am finished',
+                    #         'finished',
+                    #         'done',
+                    #         'that is all',
+                    #         'thank you',
+                    #     ],
+                    # ),
+                    # SimpleIntent(
+                    #     name='ReturnToMenu',
+                    #     utterances=[
+                    #         'go back to main menu',
+                    #         'return to menu',
+                    #         'main menu',
+                    #         'go back',
+                    #         'menu',
+                    #     ],
+                    # ),
                 ],
             ),
         ]

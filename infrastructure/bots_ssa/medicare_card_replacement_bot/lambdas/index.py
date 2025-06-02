@@ -7,18 +7,11 @@ from typing import Any, Dict
 logger = logging.getLogger()
 logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
 
-# Mock SSA API clients (replace with actual implementation)
-# ssa_auth_client = boto3.client('lambda')  # Replace with actual SSA API client
-# ssa_medicare_client = boto3.client('lambda')  # Replace with actual Medicare API client
-
 
 class MedicareCardReplacementHandler:
     """
     Handles Mecicare Card Replacement bot conversation flow
     """
-
-    # def __init__(self):
-    # self.api_client = ssa_medicare_client
 
     def handler(self, event: Dict[str, Any], context=None) -> Dict[str, Any]:
         """Route to dialog_hook() or fulfillment_hook()"""
@@ -50,105 +43,131 @@ class MedicareCardReplacementHandler:
                     intent=intent_object,
                 )
 
-        privacy_value = slots['privacyAcknowledgment']['value'][
-            'interpretedValue'
-        ].lower()
+            privacy_value = slots['privacyAcknowledgment']['value'][
+                'interpretedValue'
+            ].lower()
+            logger.debug(f'Privacy value: {privacy_value}')
 
-        # Handle privacy responses
-        if 'more' in privacy_value:
-            return self.elicit_slot_response(
-                slot_name='privacyAcknowledgment',
-                message='Privacy and Paperwork Reduction Act. Say Continue if you agree.',
-                session_attributes=session_attributes,
-                intent=intent_object,
-            )
+            # Handle privacy responses
+            if 'more' in privacy_value:
+                return self.elicit_slot_response(
+                    slot_name='privacyAcknowledgment',
+                    message='Privacy and Paperwork Reduction Act. Say Continue if you agree.',
+                    session_attributes=session_attributes,
+                    intent=intent_object,
+                )
 
-        if 'no' in privacy_value or 'disagree' in privacy_value:
-            session_attributes['action'] = 'TransferToAgent'
-            session_attributes['reason'] = 'TermsDeclined'
+            if 'no' in privacy_value or 'disagree' in privacy_value:
+                session_attributes['action'] = 'TransferToAgent'
+                session_attributes['reason'] = 'TermsDeclined'
+                return self.close_response(
+                    intent_name=intent_name,
+                    message='Without your agreement, I will not be able to help you with anything that requires access to personal information. Hold on while I get someone to help you.',
+                    session_attributes=session_attributes,
+                )
+
+            if (
+                'continue' not in privacy_value
+                and 'yes' not in privacy_value
+                and 'agree' not in privacy_value
+            ):
+                # Step 2: Terms agreement
+                if not slots.get('termsAgreement'):
+                    return self.elicit_slot_response(
+                        slot_name='termsAgreement',
+                        message='Please note that any person who makes a false representation in an effort to alter or obtain information from the Social Security Administration may be punished by a fine or imprisonment or both. Do you understand and agree to these terms?',
+                        session_attributes=session_attributes,
+                        intent=intent_object,
+                    )
+            else:
+                return self.elicit_slot_response(
+                    slot_name='privacyAcknowledgment',
+                    message="Let's try again. Please note that any person who makes a false representation in an effort to alter or obtain information from the Social Security Administration may be punished by a fine or imprisonment or both. Do you understand and agree to these terms?",
+                    session_attributes=session_attributes,
+                    intent=intent_object,
+                )
+
+            terms_value = slots['termsAgreement']['value'][
+                'interpretedValue'
+            ].lower()
+
+            if 'no' in terms_value or 'disagree' in terms_value:
+                    session_attributes['action'] = 'TransferToAgent'
+                    session_attributes['reason'] = 'TermsDeclined'
+                    return self.close_response(
+                        intent_name=intent_name,
+                        message='Without your agreement, I will not be able to help you with anything that requires access to personal information. Hold on while I get someone to help you.',
+                        session_attributes=session_attributes,
+                    )
+
+                if 'yes' not in terms_value and 'agree' not in terms_value:
+                    return self.elicit_slot_response(
+                        slot_name='termsAgreement',
+                        message='Without your agreement, I will not be able to help you with anything that requires access to personal information. Hold on while I get someone to help you..',
+                        session_attributes=session_attributes,
+                        intent=intent_object,
+                    )
+
+                else:
+                    # Step 3: Social Security Number
+                    if not slots.get('socialSecurityNumber'):
+                        return self.elicit_slot_response(
+                            slot_name='socialSecurityNumber',
+                            message='Please provide your Social Security number.',
+                            session_attributes=session_attributes,
+                            intent=intent_object,
+                        )
+
+                    else:
+                        # Step 4: Date of Birth
+                        if not slots.get('dateOfBirth'):
+                            return self.elicit_slot_response(
+                                slot_name='dateOfBirth',
+                                message='Please provide your date of birth.',
+                                session_attributes=session_attributes,
+                                intent=intent_object,
+                            )
+
+                        else:
+                            # Step 5: First Name
+                            if not slots.get('firstName'):
+                                return self.elicit_slot_response(
+                                    slot_name='firstName',
+                                    message='Please provide your first name.',
+                                    session_attributes=session_attributes,
+                                    intent=intent_object,
+                                )
+
+                            else:
+                                # Step 6: Last Name
+                                if not slots.get('lastName'):
+                                    return self.elicit_slot_response(
+                                        slot_name='lastName',
+                                        message='Please provide your last name.',
+                                        session_attributes=session_attributes,
+                                        intent=intent_object,
+                                    )
+
+                                else:
+                                    # All slots filled - delegate to fulfillment
+                                    return self.delegate_response(
+                                        session_attributes, intent_object
+                                    )
+
+        if intent_name == 'ReturnToMenu':
             return self.close_response(
                 intent_name=intent_name,
-                message='Without your agreement, I will not be able to help you with anything that requires access to personal information. Hold on while I get someone to help you.',
+                message='Thank you for calling.',
                 session_attributes=session_attributes,
             )
 
-        if (
-            'continue' not in privacy_value
-            and 'yes' not in privacy_value
-            and 'agree' not in privacy_value
-        ):
-            return self.elicit_slot_response(
-                slot_name='privacyAcknowledgment',
-                message='Please say continue or more information.',
-                session_attributes=session_attributes,
-                intent=intent_object,
-            )
-
-        # Step 2: Terms agreement
-        if not slots.get('termsAgreement'):
-            return self.elicit_slot_response(
-                slot_name='termsAgreement',
-                message='Please note that any person who makes a false representation in an effort to alter or obtain information from the Social Security Administration may be punished by a fine or imprisonment or both. Do you understand and agree to these terms?',
-                session_attributes=session_attributes,
-                intent=intent_object,
-            )
-
-        terms_value = slots['termsAgreement']['value']['interpretedValue'].lower()
-
-        if 'no' in terms_value or 'disagree' in terms_value:
-            session_attributes['action'] = 'TransferToAgent'
-            session_attributes['reason'] = 'TermsDeclined'
+        if intent_name == 'Finished':
             return self.close_response(
                 intent_name=intent_name,
-                message='Without your agreement, I will not be able to help you with anything that requires access to personal information. Hold on while I get someone to help you.',
+                message='Thank you for calling.',
                 session_attributes=session_attributes,
             )
 
-        if 'yes' not in terms_value and 'agree' not in terms_value:
-            return self.elicit_slot_response(
-                slot_name='termsAgreement',
-                message='Please say yes or no.',
-                session_attributes=session_attributes,
-                intent=intent_object,
-            )
-
-        # Step 3: Social Security Number
-        if not slots.get('socialSecurityNumber'):
-            return self.elicit_slot_response(
-                slot_name='socialSecurityNumber',
-                message='Please provide your Social Security number.',
-                session_attributes=session_attributes,
-                intent=intent_object,
-            )
-
-        # Step 4: Date of Birth
-        if not slots.get('dateOfBirth'):
-            return self.elicit_slot_response(
-                slot_name='dateOfBirth',
-                message='Please provide your date of birth.',
-                session_attributes=session_attributes,
-                intent=intent_object,
-            )
-
-        # Step 5: First Name
-        if not slots.get('firstName'):
-            return self.elicit_slot_response(
-                slot_name='firstName',
-                message='Please provide your first name.',
-                session_attributes=session_attributes,
-                intent=intent_object,
-            )
-
-        # Step 6: Last Name
-        if not slots.get('lastName'):
-            return self.elicit_slot_response(
-                slot_name='lastName',
-                message='Please provide your last name.',
-                session_attributes=session_attributes,
-                intent=intent_object,
-            )
-
-        # All slots filled - delegate to fulfillment
         return self.delegate_response(session_attributes, intent_object)
 
     def fulfillment_hook(self, event):
@@ -202,39 +221,17 @@ class MedicareCardReplacementHandler:
                 )
 
             elif auth_result == 'SUCCESS':
-                # Mock Medicare API
-                medicare_result = random.choice(['SUCCESS', 'FAILED'])
-
-                if medicare_result == 'FAILED':
-                    session_attributes.update(
-                        {
-                            'action': 'TransferToAgent',
-                            'reason': 'ProcessingError',
-                            'processingStage': 'medicare',
-                            'userSSN': ssn[-4:],  # Last 4 digits
-                        }
-                    )
-                    return self.close_response(
-                        intent_name=intent_name,
-                        # P9012 (In-Hour)
-                        message="Sorry, I'm having trouble processing this request. Hold on while I get someone to help you.",
-                        # P9012 (Out-Hour)
-                        # message="Sorry, I'm having trouble processing this request. Unfortunately.",
-                        session_attributes=session_attributes,
-                    )
-
-                else:  # SUCCESS
-                    session_attributes.update(
-                        {
-                            'action': 'ReturnToMenu',
-                        }
-                    )
-                    return self.close_response(
-                        intent_name=intent_name,
-                        # P1047
-                        message="Alright. We're all set. You should receive your replacement Medicare card in the mail within four weeks. If you're finished, feel free to hang up. Otherwise, just hang on and I'll take you back to the Main Menu.",
-                        session_attributes=session_attributes,
-                    )
+                session_attributes.update(
+                    {
+                        'action': 'ReturnToMenu',
+                    }
+                )
+                return self.close_response(
+                    intent_name=intent_name,
+                    # P1047
+                    message="Alright. We're all set. You should receive your replacement Medicare card in the mail within four weeks. If you're finished, feel free to hang up. Otherwise, just hang on and I'll take you back to the Main Menu.",
+                    session_attributes=session_attributes,
+                )
         return
 
     ### Helper functions to extract data from Lex event ###
