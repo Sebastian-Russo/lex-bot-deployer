@@ -4,6 +4,12 @@
 P1110: Initial zipcode collection
 Okay, office information. One moment. Go ahead and say or enter the five digit zip code for your area or the area where you want to find an office.
 
+P1110c: Invalid Zip Code
+That is an invalid Zip Code. Let's try again. Please say the five digit zip code where you'd like me to search like this 1 2 3 0 0. Or enter it on your keypad.
+
+P1110d: Request reenter zip code
+My mistake. Let's try again. Please say the five digit zip code where you'd like me to search like this 1 2 3 0 0. Or enter it on your keypad.
+
 P1110e: (In-Hour)
 Sounds like you don't know the zip code. Let me connect you to an agent.
 
@@ -63,6 +69,10 @@ All right. To apply for a new or replacement Social Security card, you will need
 
 **Slot** => repeat
 P1123: To hear that again, say repeat that. For information about the local Social Security office, say local office. To search in a different zip code, say change zip code.Or if you're finished, just say, I'm finished.
+
+**no**
+P1112
+Okay, here's information for the servicing office in the zip code {zip_code}. The address is {address}. The hours of operation are {hours}. And the phone number is {phone}.
 
 **Slot** => finished
 End of conversation.

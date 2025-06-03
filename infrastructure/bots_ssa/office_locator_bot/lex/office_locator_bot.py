@@ -122,35 +122,35 @@ class OfficeLocatorBot(Construct):
                         ],
                     ),
                     # Utility intents
-                    # SimpleIntent(
-                    #     name='LocalOfficeInfo',
-                    #     utterances=[
-                    #         'local office',
-                    #         'local office information',
-                    #         'tell me about local office',
-                    #         'local office info',
-                    #     ],
-                    # ),
-                    # SimpleIntent(
-                    #     name='Finished',
-                    #     utterances=[
-                    #         'I am finished',
-                    #         'finished',
-                    #         'done',
-                    #         'that is all',
-                    #         'thank you',
-                    #     ],
-                    # ),
-                    # SimpleIntent(
-                    #     name='ReturnToMenu',
-                    #     utterances=[
-                    #         'go back to main menu',
-                    #         'return to menu',
-                    #         'main menu',
-                    #         'go back',
-                    #         'menu',
-                    #     ],
-                    # ),
+                    SimpleIntent(
+                        name='LocalOfficeInfo',
+                        utterances=[
+                            'local office',
+                            'local office information',
+                            'tell me about local office',
+                            'local office info',
+                        ],
+                    ),
+                    SimpleIntent(
+                        name='Finished',
+                        utterances=[
+                            'I am finished',
+                            'finished',
+                            'done',
+                            'that is all',
+                            'thank you',
+                        ],
+                    ),
+                    SimpleIntent(
+                        name='ReturnToMenu',
+                        utterances=[
+                            'go back to main menu',
+                            'return to menu',
+                            'main menu',
+                            'go back',
+                            'menu',
+                        ],
+                    ),
                 ],
             ),
         ]
