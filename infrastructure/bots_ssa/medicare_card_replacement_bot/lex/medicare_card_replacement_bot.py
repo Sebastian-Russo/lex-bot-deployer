@@ -15,13 +15,6 @@ from ....constructs.simple_bot import (
 )
 from ....utils.create_lambda import create_lambda
 
-logger = logging.getLogger()
-logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
-
-# Mock SSA API clients (replace with actual implementation)
-# ssa_auth_client = boto3.client('lambda')  # Replace with actual SSA API client
-# ssa_medicare_client = boto3.client('lambda')  # Replace with actual Medicare API client
-
 
 class LexHelper:
     """Helper class for working with Lex V2 events and responses"""
