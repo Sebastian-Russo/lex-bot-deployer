@@ -1,3 +1,4 @@
+import json
 import logging
 import os
 
@@ -33,10 +34,10 @@ class PamphletHandler:
         )
 
         if intent_name == 'ProcessPamphletRequest':
-            return self.handle_conditional_slot_collection(event, slots)
+            return
         else:
             # For utility intents, just delegate
-            return self.delegate_response(event)
+            return
 
     def fulfillment_hook(self, event):
         """Handle fulfillment - determine final action based on collected slots"""
@@ -60,35 +61,55 @@ class PamphletHandler:
         else:
             return  # TODO
 
+    ### Helper functions to extract data from Lex events ###
+
     def get_intent_name(self, event):
+        """Extract intent name from event"""
         return event.get('sessionState', {}).get('intent', {}).get('name', '')
 
     def get_slots(self, event):
+        """Extract slots from event"""
         return event.get('sessionState', {}).get('intent', {}).get('slots', {})
 
     def get_session_attributes(self, event):
-        return event.get('sessionAttributes', {})
+        """Extract session attributes from event"""
+        return event.get('sessionState', {}).get('sessionAttributes', {})
 
-    def delegate_response(self, event):
+    ### Helper functions to build Lex responses ###
+
+    def elicit_slot_response(self, slot_name, message, session_attributes, intent):
+        """Build "ask for slot" response"""
         return {
-            'sessionAttributes': event.get('sessionAttributes', {}),
-            'dialogAction': {
-                'type': 'Delegate',
-                'intentName': self.get_intent_name(event),
+            'sessionState': {
+                'dialogAction': {'type': 'ElicitSlot', 'slotToElicit': slot_name},
+                'intent': intent,
+                'sessionAttributes': session_attributes,
+            },
+            'messages': [{'contentType': 'PlainText', 'content': message}],
+        }
+
+    def delegate_response(self, session_attributes, intent_object):
+        """Build "let Lex continue" response"""
+        return {
+            'sessionState': {
+                'dialogAction': {'type': 'Delegate'},
+                'intent': intent_object,
+                'sessionAttributes': session_attributes,
             },
         }
 
-    def close_response(self, event, fulfillment_state, message):
+    def close_response(self, session_attributes, intent_name, message):
+        """Build "conversation finished" response"""
         return {
-            'sessionAttributes': event.get('sessionAttributes', {}),
-            'dialogAction': {
-                'type': 'Close',
-                'fulfillmentState': fulfillment_state,
-                'message': {
-                    'contentType': 'PlainText',
-                    'content': message,
+            'sessionState': {
+                'dialogAction': {'type': 'Close'},
+                'intent': {
+                    'name': intent_name,
+                    'state': 'Fulfilled',  # or 'Failed'
                 },
+                'sessionAttributes': session_attributes,
             },
+            'messages': [{'contentType': 'PlainText', 'content': message}],
         }
 
 
