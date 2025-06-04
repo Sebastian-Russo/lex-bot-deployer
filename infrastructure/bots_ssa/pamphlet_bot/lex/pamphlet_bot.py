@@ -1,3 +1,4 @@
+import logging
 import os
 from typing import Optional
 
@@ -5,10 +6,17 @@ from aws_cdk import aws_iam as iam
 from constructs import Construct
 
 from ....constructs.simple_bot import (
+    CodeHook,
     SimpleBot,
     SimpleBotProps,
+    SimpleIntent,
+    SimpleLocale,
+    SimpleSlot,
 )
 from ....utils.create_lambda import create_lambda
+
+logger = logging.getLogger()
+logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
 
 
 class PamphletBot(Construct):
@@ -45,7 +53,29 @@ class PamphletBot(Construct):
         )
 
         # Define locales
-        locales = []
+        locales = [
+            SimpleLocale(
+                locale_id='en_US',
+                code_hook=CodeHook(
+                    lambda_=self.lambda_handler,
+                    dialog_code_hook=True,
+                    fulfillment_code_hook=True,
+                ),
+                intents=[
+                    SimpleIntent(
+                        intent_id='ProcessPamphletRequest',
+                        name='ProcessPamphletRequest',
+                        slots=[
+                            SimpleSlot(
+                                slot_id='pamphlet_type',
+                                name='pamphlet_type',
+                                slot_type='PamphletType',
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ]
 
         # Create bot
         SimpleBot(
