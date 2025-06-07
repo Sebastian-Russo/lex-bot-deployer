@@ -13,13 +13,13 @@ from .bots.non_emergency_menu_bot import NonEmergencyMenuBot
 from .bots.office_closed_bot import OfficeClosedBot
 from .bots.pin_auth_bot import PinAuthBot
 from .bots.yes_no_bot import YesNoBot
+
+# SSA bots
 from .bots_ssa.medicare_card_replacement_bot.lex.medicare_card_replacement_bot import (
     MedicareCardReplacementBot,
 )
 from .bots_ssa.office_locator_bot.lex.office_locator_bot import OfficeLocatorBot
-
-# from .bots_ssa.pamphlet_bot.lex.pamphlet_bot import PamphletBot
-from .bots_ssa.reprint_1099_bot.lex.reprint_1099_bot import Reprint1099Bot
+from .bots_ssa.pamphlet_bot.lex.pamphlet_bot import PamphletBot
 from .bots_ssa.ssa_menu_bot import SSAMenuBot
 
 # Import constructs
@@ -170,17 +170,16 @@ class LexStack(Stack):
                 log_group=log_group,
                 audio_bucket=audio_bucket,
             ),
-            Reprint1099Bot(
-                self,
-                'Reprint1099Bot',
-                prefix=prefix,
-                connect_instance_arn=connect_instance_arn,
-                city_hall_queue_arn=city_hall_queue_arn,
-                role=role,
-                log_group=log_group,
-                audio_bucket=audio_bucket,
-            ),
-            # office locator bot
+            # Reprint1099Bot(
+            #     self,
+            #     'Reprint1099Bot',
+            #     prefix=prefix,
+            #     connect_instance_arn=connect_instance_arn,
+            #     city_hall_queue_arn=city_hall_queue_arn,
+            #     role=role,
+            #     log_group=log_group,
+            #     audio_bucket=audio_bucket,
+            # ),
             OfficeLocatorBot(
                 self,
                 'OfficeLocatorBot',
@@ -191,7 +190,6 @@ class LexStack(Stack):
                 log_group=log_group,
                 audio_bucket=audio_bucket,
             ),
-            # medicare card replacement bot
             MedicareCardReplacementBot(
                 self,
                 'MedicareCardReplacementBot',
@@ -202,17 +200,16 @@ class LexStack(Stack):
                 log_group=log_group,
                 audio_bucket=audio_bucket,
             ),
-            # pamphlet bot
-            # PamphletBot(
-            #     self,
-            #     'PamphletBot',
-            #     prefix=prefix,
-            #     connect_instance_arn=connect_instance_arn,
-            #     city_hall_queue_arn=city_hall_queue_arn,
-            #     role=role,
-            #     log_group=log_group,
-            #     audio_bucket=audio_bucket,
-            # ),
+            PamphletBot(
+                self,
+                'PamphletBot',
+                prefix=prefix,
+                connect_instance_arn=connect_instance_arn,
+                city_hall_queue_arn=city_hall_queue_arn,
+                role=role,
+                log_group=log_group,
+                audio_bucket=audio_bucket,
+            ),
         ]
 
         # Apply throttled deployment to avoid API limits

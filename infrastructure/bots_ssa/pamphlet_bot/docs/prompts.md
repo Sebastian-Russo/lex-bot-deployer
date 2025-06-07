@@ -108,10 +108,7 @@ All set. I've put your order through, and you should receive the pamphlets, {lis
 P1021:
 Alright. If you're finished, feel free to hang up. Otherwise, just hang on and I'll take you back to the Main Menu.
 
--
--
--
-- **_Global Behavior_**
+**_Global Behavior_**
 
 Intent: Finished
 Closing response, set session attributes
