@@ -219,7 +219,7 @@ class PamphletHandler:
                         )
                         return self.elicit_slot_response(
                             slot_name='StreetName',
-                            message="Thanks. Now let's get your address.What is your street name?",
+                            message="Thanks. Now let's get your address. What is your street name?",
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
@@ -240,17 +240,48 @@ class PamphletHandler:
                 logger.debug('State slot: %s', state_slot)
                 logger.debug('ZipCode slot: %s', zip_code_slot)
 
-                # Check if ZipCode has a value (process in reverse order)
+                # Check if ZipCode has a value
                 if zip_code_slot and 'value' in zip_code_slot:
-                    # ZipCode was provided, we're done with address collection
+                    # All address slots should be provided, format the address
+                    street_name_value = (
+                        street_name_slot['value'].get('interpretedValue', '')
+                        if street_name_slot
+                        else ''
+                    )
+                    city_value = (
+                        city_slot['value'].get('interpretedValue', '')
+                        if city_slot
+                        else ''
+                    )
+                    state_value = (
+                        state_slot['value'].get('interpretedValue', '')
+                        if state_slot
+                        else ''
+                    )
                     zip_code_value = zip_code_slot['value'].get('interpretedValue', '')
-                    logger.debug('ZipCode value: %s', zip_code_value)
-                    # Here you would handle the completion of address collection
-                    # For now, just return a message
-                    return self.close_response(
+                    logger.debug(
+                        'Address values - Street: %s, City: %s, State: %s, Zip: %s',
+                        street_name_value,
+                        city_value,
+                        state_value,
+                        zip_code_value,
+                    )
+
+                    # Format the address
+                    full_address = f'{street_name_value}, {city_value}, {state_value}, {zip_code_value}'
+                    logger.debug('Formatted address: %s', full_address)
+
+                    # Update session attributes with full address and change flow phase
+                    session_attributes.update(
+                        {'fullAddress': full_address, 'flowPhase': 'confirmation'}
+                    )
+
+                    # Elicit AddressConfirmation slot
+                    return self.elicit_slot_response(
+                        slot_name='AddressConfirmation',
+                        message=f'Is this your address: {full_address}?',
                         session_attributes=session_attributes,
-                        intent_name=intent_name,
-                        message='Thank you! Your pamphlets will be mailed to you shortly.',
+                        intent=intent_object,
                     )
 
                 # Check if State has a value
@@ -265,7 +296,7 @@ class PamphletHandler:
                         intent=intent_object,
                     )
 
-                # Check if City has a value
+                # Check if City has a value, ask for State
                 if city_slot and 'value' in city_slot:
                     # City was provided, move to State
                     city_value = city_slot['value'].get('interpretedValue', '')
@@ -277,7 +308,7 @@ class PamphletHandler:
                         intent=intent_object,
                     )
 
-                # Check if StreetName has a value
+                # Check if StreetName has a value, ask for City
                 if street_name_slot and 'value' in street_name_slot:
                     # Street name was provided, move to City
                     street_name_value = street_name_slot['value'].get(
@@ -286,16 +317,66 @@ class PamphletHandler:
                     logger.debug('Street name value: %s', street_name_value)
                     return self.elicit_slot_response(
                         slot_name='City',
-                        message="Thanks. Now let's get your address. What is your city?",
+                        message='Thanks. What is your city?',
                         session_attributes=session_attributes,
                         intent=intent_object,
                     )
 
-                # If we get here and we're in address phase but no slots are filled,
-                # we need to start with street name
+                # If we get here, start with street name
                 return self.elicit_slot_response(
                     slot_name='StreetName',
                     message="Thanks. Now let's get your address. What is your street name?",
+                    session_attributes=session_attributes,
+                    intent=intent_object,
+                )
+
+            if flow_phase == 'confirmation':
+                logger.debug('Flow phase: %s', flow_phase)
+                logger.debug('Slots: %s', slots)
+
+                # Extract AddressConfirmation slot
+                confirmation_slot = slots.get('AddressConfirmation')
+                logger.debug('AddressConfirmation: %s', confirmation_slot)
+
+                # Check if AddressConfirmation has a value
+                if confirmation_slot and 'value' in confirmation_slot:
+                    confirmation_value = (
+                        confirmation_slot['value'].get('interpretedValue', '').lower()
+                    )
+                    logger.debug('AddressConfirmation value: %s', confirmation_value)
+
+                    # If user confirms the address
+                    if 'yes' in confirmation_value:
+                        # Delegate to FulfillmentCodeHook
+                        return self.delegate_response(
+                            session_attributes=session_attributes,
+                            intent_object=intent_object,
+                        )
+                    # If user denies the address
+                    if 'no' in confirmation_value:
+                        # Reset address slots and flow phase
+                        intent_object['slots']['StreetName'] = None
+                        intent_object['slots']['City'] = None
+                        intent_object['slots']['State'] = None
+                        intent_object['slots']['ZipCode'] = None
+                        session_attributes.update(
+                            {
+                                'flowPhase': 'address',
+                                'fullAddress': '',  # Clear stored address
+                            }
+                        )
+                        return self.elicit_slot_response(
+                            slot_name='StreetName',
+                            message="Okay, let's try again. What is your street name?",
+                            session_attributes=session_attributes,
+                            intent=intent_object,
+                        )
+
+                # If AddressConfirmation slot is not yet filled, elicit it again
+                full_address = session_attributes.get('fullAddress', '')
+                return self.elicit_slot_response(
+                    slot_name='AddressConfirmation',
+                    message=f'Is this your address: {full_address}?',
                     session_attributes=session_attributes,
                     intent=intent_object,
                 )

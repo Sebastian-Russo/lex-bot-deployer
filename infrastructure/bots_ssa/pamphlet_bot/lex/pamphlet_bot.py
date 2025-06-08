@@ -209,6 +209,15 @@ class PamphletBot(Construct):
                                 allow_interrupt=True,
                                 max_retries=2,
                             ),
+                            SimpleSlot(
+                                slot_type_name='AMAZON.Confirmation',
+                                name='AddressConfirmation',
+                                elicitation_messages=['Placeholder'],
+                                description='Address confirmation',
+                                required=False,
+                                allow_interrupt=True,
+                                max_retries=2,
+                            ),
                         ],
                     ),
                     SimpleIntent(
