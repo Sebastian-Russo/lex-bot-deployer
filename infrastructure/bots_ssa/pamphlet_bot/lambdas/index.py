@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import random
 
 logger = logging.getLogger()
 logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
@@ -333,6 +334,7 @@ class PamphletHandler:
             if flow_phase == 'confirmation':
                 logger.debug('Flow phase: %s', flow_phase)
                 logger.debug('Slots: %s', slots)
+                logger.debug('Session Attributes: %s', json.dumps(session_attributes))
 
                 # Extract AddressConfirmation slot
                 confirmation_slot = slots.get('AddressConfirmation')
@@ -345,8 +347,36 @@ class PamphletHandler:
                     )
                     logger.debug('AddressConfirmation value: %s', confirmation_value)
 
+                    # Check selectedPamphlets
+                    selected_pamphlets = json.loads(
+                        session_attributes.get('selectedPamphlets', '[]')
+                    )
+                    logger.debug('Selected pamphlets: %s', selected_pamphlets)
+
+                    # If no pamphlets selected, prompt to select pamphlets again
+                    if not selected_pamphlets:
+                        session_attributes.update(
+                            {
+                                'flowPhase': 'selection',
+                                'currentPamphletIndex': '1',
+                                'fullAddress': '',  # Clear address since we're restarting
+                            }
+                        )
+                        return self.elicit_slot_response(
+                            slot_name='UnderstandingSocialSecurity',
+                            message="You haven't selected any pamphlets. Let's start again. Would you like to hear the pamphlet on Understanding Social Security?",
+                            session_attributes=session_attributes,
+                            intent=intent_object,
+                        )
+
                     # If user confirms the address
                     if 'yes' in confirmation_value:
+                        # Ensure session_attributes are preserved
+                        session_attributes.update(
+                            {  # Keep for clarity in fulfillment
+                                'flowPhase': 'confirmation'
+                            }
+                        )
                         # Delegate to FulfillmentCodeHook
                         return self.delegate_response(
                             session_attributes=session_attributes,
@@ -374,8 +404,16 @@ class PamphletHandler:
 
                 # If AddressConfirmation slot is not yet filled, elicit it again
                 full_address = session_attributes.get('fullAddress', '')
+                if not full_address:
+                    logger.debug('No fullAddress found, restarting address collection')
+                    session_attributes.update(
+                        {
+                            'flowPhase': 'address',
+                            'fullAddress': '',
+                        }
+                    )
                 return self.elicit_slot_response(
-                    slot_name='AddressConfirmation',
+                    slot_name='AddressConfirmation',  ##
                     message=f'Is this your address: {full_address}?',
                     session_attributes=session_attributes,
                     intent=intent_object,
@@ -434,13 +472,66 @@ class PamphletHandler:
         )
 
         if intent_name == 'ProcessPamphletRequest':
-            return  # TODO
+            # Extract session attributes
+            full_address = session_attributes.get('fullAddress', '')
+            selected_pamphlets = json.loads(
+                session_attributes.get('selectedPamphlets', '[]')
+            )
+            logger.debug('Full address: %s', full_address)
+            logger.debug('Selected pamphlets: %s', selected_pamphlets)
+
+            # Check if required data is present
+            if not full_address or not selected_pamphlets:
+                logger.debug(
+                    'Missing fullAddress or selectedPamphlets, closing with error'
+                )
+                return self.close_response(
+                    session_attributes=session_attributes,
+                    intent_name=intent_name,
+                    message='Sorry, there was an issue with your request. Please try again.',
+                )
+
+            # Simulate API call with 90% success rate
+            api_success = random.random() < 0.9  # 90% chance of success
+            logger.debug(
+                'Mock API call result: %s', 'Success' if api_success else 'Failure'
+            )
+
+            # If mock API call is successful, close the conversation
+            if api_success:
+                # Format pamphlet list for user-friendly response
+                formatted_pamphlets = self._format_pamphlet_list(selected_pamphlets)
+                return self.close_response(
+                    session_attributes=session_attributes,
+                    intent_name=intent_name,
+                    message=f"All set. I've put your order through, and you should receive the pamphlets, {formatted_pamphlets}, in the mail within two weeks.",
+                )
+            else:
+                return self.close_response(
+                    session_attributes=session_attributes,
+                    intent_name=intent_name,
+                    message='Sorry, there was an issue processing your request. Please try again later.',
+                )
+
         elif intent_name == 'RepeatRequest':
-            return  # TODO
+            return self.close_response(
+                session_attributes=session_attributes,
+                intent_name=intent_name,
+                message='Could you please repeat that one more time?',
+            )
         elif intent_name == 'ReturnToMenu':
-            return  # TODO
+            return self.close_response(
+                session_attributes=session_attributes,
+                intent_name=intent_name,
+                message='Returning to the main menu.',
+            )
         else:
-            return  # TODO
+            logger.debug('Unknown intent: %s', intent_name)
+            return self.close_response(
+                session_attributes=session_attributes,
+                intent_name=intent_name,
+                message='Sorry, I didn’t understand that request.',
+            )
 
     ### Helper functions to extract data from Lex events ###
 
@@ -459,6 +550,30 @@ class PamphletHandler:
     def get_session_attributes(self, event):
         """Extract session attributes from event"""
         return event.get('sessionState', {}).get('sessionAttributes', {})
+
+    ### Helper functions to format ###
+
+    def _format_pamphlet_list(self, pamphlets):
+        """Format pamphlet list into a user-friendly string"""
+        if not pamphlets:
+            return 'none'
+        # Convert slot names to readable titles
+        readable_names = {
+            'UnderstandingSocialSecurity': 'Understanding Social Security',
+            'RetirementBenefits': 'Retirement Benefits',
+            'DisabilityBenefits': 'Disability Benefits',
+            'SurvivorBenefits': 'Survivor Benefits',
+            'HowWorkAffectsBenefits': 'How Work Affects Benefits',
+            'BenefitsForChildrenWithDisabilities': 'Benefits for Children with Disabilities',
+            'WhatEveryWomanShouldKnowAboutSocialSecurity': 'What Every Woman Should Know About Social Security',
+        }
+        formatted = [readable_names.get(pamphlet, pamphlet) for pamphlet in pamphlets]
+        if len(formatted) == 1:
+            return formatted[0]
+        elif len(formatted) == 2:
+            return f'{formatted[0]} and {formatted[1]}'
+        else:
+            return f'{", ".join(formatted[:-1])}, and {formatted[-1]}'
 
     ### Helper functions to build Lex responses ###
 
