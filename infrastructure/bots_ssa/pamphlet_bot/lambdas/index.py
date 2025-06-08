@@ -40,19 +40,25 @@ class PamphletHandler:
         session_attributes = self.get_session_attributes(event)
         # selection, address, confirmation
         flow_phase = session_attributes.get('flowPhase', 'selection')
-        logger.debug(
-            'Dialog hook - Intent and Slots: %s, Flow Phase: %s, Session Attributes: %s',
-            json.dumps(intent_object),
-            json.dumps(flow_phase),
-            json.dumps(session_attributes),
-        )
+        logger.debug('Dialog hook')
+        logger.debug('Intent: %s', json.dumps(intent_name))
+        logger.debug('Slots: %s', json.dumps(slots))
+        logger.debug('Flow Phase: %s', json.dumps(flow_phase))
+        logger.debug('Session Attributes: %s', json.dumps(session_attributes))
 
         if intent_name == 'ProcessPamphletRequest':
-            # flowPhone selection, no session attributes, initialize
-            if (
-                flow_phase == 'selection'
-                and session_attributes.get('currentPamphletIndex', None) is None
-            ):
+            logger.debug('ProcessPamphletRequest')
+            # Get Session Attributes
+            current_pamphlet_index = session_attributes.get(
+                'currentPamphletIndex', None
+            )
+
+            # flowChange selection, no session attributes, initialize
+            if flow_phase == 'selection' and current_pamphlet_index is None:
+                logger.debug('Dialog Hook - Initialize Session Attributes')
+                pamphlet_slot = slots.get('UnderstandingSocialSecurity', None)
+                pamphlet_value = ''
+
                 # If no session attributes, start at the beginning, initialize session attributes
                 # Offer first pamphlet
                 if 'currentPamphletIndex' not in session_attributes:
@@ -71,22 +77,26 @@ class PamphletHandler:
                 )
 
             # flowPhone selection, session attributes, continue
-            if (
-                flow_phase == 'selection'
-                and session_attributes.get('currentPamphletIndex', None) is not None
-            ):
+            if flow_phase == 'selection' and current_pamphlet_index is not None:
+                pamphlet_slot = slots.get('UnderstandingSocialSecurity', None)
+                pamphlet_value = ''
+                if pamphlet_slot and 'value' in pamphlet_slot:
+                    pamphlet_value = (
+                        pamphlet_slot['value'].get('interpretedValue', '').lower()
+                    )
+                logger.debug('Pamphlet slot: %s', json.dumps(pamphlet_slot))
+                logger.debug('Pamphlet value: %s', json.dumps(pamphlet_value))
+
                 current_pamphlet_index = session_attributes.get(
                     'currentPamphletIndex', 0
                 )
                 selected_pamphlets = json.loads(
                     session_attributes.get('selectedPamphlets', '[]')
                 )
-                logger.debug(
-                    'Dialog hook - If there are session attributes, continue - Current pamphlet index: %s, Selected pamphlets: %s, Flow phase: %s',
-                    current_pamphlet_index,
-                    json.dumps(selected_pamphlets),
-                    flow_phase,
-                )
+                logger.debug('Dialog hook')
+                logger.debug('Current pamphlet index: %s', current_pamphlet_index)
+                logger.debug('Selected pamphlets: %s', json.dumps(selected_pamphlets))
+                logger.debug('Flow phase: %s', flow_phase)
 
                 # if current_pamphlet_index == 1-7:
                 if int(current_pamphlet_index) <= 7:
@@ -103,19 +113,12 @@ class PamphletHandler:
                         pamphlet_value = (
                             pamphlet_slot['value'].get('interpretedValue', '').lower()
                         )
-                    logger.debug(
-                        'Pamphlet name: %s, Pamphlet value: %s, Flow phase: %s, Selected pamphlets: %s',
-                        pamphlet_name,
-                        pamphlet_value,
-                        flow_phase,
-                        selected_pamphlets,
-                    )
+                    logger.debug('Pamphlet name: %s', pamphlet_name)
+                    logger.debug('Pamphlet value: %s', pamphlet_value)
+                    logger.debug('Flow phase: %s', flow_phase)
 
                     selected_pamphlets.append(pamphlet_name)
-                    logger.debug(
-                        'Flow phase: %s',
-                        flow_phase,
-                    )
+                    logger.debug('Selected pamphlets: %s', selected_pamphlets)
                     new_index = int(current_pamphlet_index) + 1
                     # If yes they want pamphlet, add pamphlet to selected pamphlets and ask if they want to hear next pamphlet
                     if 'yes' in pamphlet_value.lower():
@@ -146,41 +149,6 @@ class PamphletHandler:
                         return self.elicit_slot_response(
                             slot_name='StreetName',
                             message='What is your street name?',
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
-
-                # Offer next pamphlet
-                if 'HearNextPamphletChoiceConfirmation' in slots:
-                    pamphlet_slot = slots['HearNextPamphletChoiceConfirmation']
-                    pamphlet_confirmation = ''
-                    if pamphlet_slot and 'value' in pamphlet_slot:
-                        pamphlet_confirmation = (
-                            pamphlet_slot['value'].get('interpretedValue', '').lower()
-                        )
-                    logger.debug(
-                        'Hear next pamphlet choice confirmation: %s, Flow phase: %s',
-                        pamphlet_confirmation,
-                        flow_phase,
-                    )
-                    slot_name = session_attributes['currentPamphletIndex']
-                    pamphlet_name = self.slot_names[slot_name]
-                    if 'yes' in pamphlet_confirmation:
-                        return self.elicit_slot_response(
-                            slot_name=pamphlet_name,
-                            message=f'Do you want the pamphlet on {pamphlet_name}?',
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
-                    if 'no' in pamphlet_confirmation:
-                        session_attributes.update(
-                            {
-                                'flowPhase': 'address',
-                            }
-                        )
-                        return self.elicit_slot_response(
-                            slot_name='StreetName',
-                            message="Thanks. Now let's get your address.What is your street name?",
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
@@ -217,6 +185,41 @@ class PamphletHandler:
                         return self.elicit_slot_response(
                             slot_name='StreetName',
                             message="That's all the pamphlets I have to offer. Thanks. Now let's get your address. What's your street name?",
+                            session_attributes=session_attributes,
+                            intent=intent_object,
+                        )
+
+                # Offer next pamphlet
+                if 'HearNextPamphletChoiceConfirmation' in slots:
+                    pamphlet_slot = slots['HearNextPamphletChoiceConfirmation']
+                    pamphlet_confirmation = ''
+                    if pamphlet_slot and 'value' in pamphlet_slot:
+                        pamphlet_confirmation = (
+                            pamphlet_slot['value'].get('interpretedValue', '').lower()
+                        )
+                    logger.debug(
+                        'Hear next pamphlet choice confirmation: %s',
+                        pamphlet_confirmation,
+                    )
+                    logger.debug('Flow phase: %s', flow_phase)
+                    slot_name = session_attributes['currentPamphletIndex']
+                    pamphlet_name = self.slot_names[slot_name]
+                    if 'yes' in pamphlet_confirmation:
+                        return self.elicit_slot_response(
+                            slot_name=pamphlet_name,
+                            message=f'Do you want the pamphlet on {pamphlet_name}?',
+                            session_attributes=session_attributes,
+                            intent=intent_object,
+                        )
+                    if 'no' in pamphlet_confirmation:
+                        session_attributes.update(
+                            {
+                                'flowPhase': 'address',
+                            }
+                        )
+                        return self.elicit_slot_response(
+                            slot_name='StreetName',
+                            message="Thanks. Now let's get your address.What is your street name?",
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
