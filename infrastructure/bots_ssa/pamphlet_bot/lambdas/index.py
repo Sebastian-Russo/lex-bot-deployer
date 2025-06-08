@@ -1,9 +1,28 @@
 import json
 import logging
 import os
+import re
 
 logger = logging.getLogger()
 logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
+
+# Order of pamphlet slots
+PAMPHLET_SLOTS = [
+    'UnderstandingSocialSecurity',
+    'RetirementBenefits',
+    'DisabilityBenefits',
+    'SurvivorBenefits',
+    'HowWorkAffectsBenefits',
+    'BenefitsForChildrenWithDisabilities',
+    'WhatEveryWomanShouldKnowAboutSocialSecurity',
+]
+
+ADDRESS_STEPS = {
+    'address_street': 'StreetName',
+    'address_city': 'City',
+    'address_state': 'State',
+    'address_zip': 'ZipCode',
+}
 
 
 class PamphletHandler:
@@ -22,398 +41,244 @@ class PamphletHandler:
         else:
             raise ValueError(f'Unknown invocation source: {invocation_source}')
 
-    slot_names = {
-        '1': 'UnderstandingSocialSecurity',
-        '2': 'RetirementBenefits',
-        '3': 'DisabilityBenefits',
-        '4': 'SurvivorBenefits',
-        '5': 'HowWorkAffectsBenefits',
-        '6': 'BenefitsForChildrenWithDisabilities',
-        '7': 'WhatEveryWomanShouldKnowAboutSocialSecurity',
+    prompts = {
+        'UnderstandingSocialSecurity': [
+            'Would you like the pamphlet on Understanding Social Security?',
+        ],
+        'RetirementBenefits': [
+            'Do you want a pamphlet on Retirement Benefits?',
+        ],
+        'DisabilityBenefits': [
+            'Do you want a pamphlet on Disability Benefits?',
+        ],
+        'SurvivorBenefits': [
+            'Do you want a pamphlet on Survivor Benefits?',
+        ],
+        'HowWorkAffectsBenefits': [
+            'Do you want a pamphlet on How Work Affects Benefits?',
+        ],
+        'BenefitsForChildrenWithDisabilities': [
+            'Do you want a pamphlet on Benefits for Children with Disabilities?',
+        ],
+        'WhatEveryWomanShouldKnowAboutSocialSecurity': [
+            'Do you want a pamphlet on What Every Woman Should Know About Social Security?',
+        ],
+        'Agent': [
+            "You'd like to talk to an agent, right?",
+            "Let's try again. You'd like to talk to an agent, right?",
+            'Sorry. TO talk to an agent, press 1, otherwise press 2.',
+        ],
+        'Finished': [
+            '',
+        ],
     }
 
     def dialog_hook(self, event):
         """Handle dialog code hook - controls conditional slot collection"""
-        intent_object = self.get_intent(event)
-        intent_name = intent_object.get('name', '')
-        slots = self.get_slots(event)
-        session_attributes = self.get_session_attributes(event)
-        # selection, address, confirmation
-        flow_phase = session_attributes.get('flowPhase', 'selection')
-        logger.debug('Dialog hook')
-        logger.debug('Intent: %s', json.dumps(intent_name))
-        logger.debug('Slots: %s', json.dumps(slots))
-        logger.debug('Flow Phase: %s', json.dumps(flow_phase))
-        logger.debug('Session Attributes: %s', json.dumps(session_attributes))
 
-        if intent_name == 'ProcessPamphletRequest':
-            logger.debug('ProcessPamphletRequest')
-            # Get Session Attributes
-            current_pamphlet_index = session_attributes.get(
-                'currentPamphletIndex', None
-            )
+        session = event.get('sessionState', {})
+        intent = session.get('intent', {})
+        session_attrs = session.get('sessionAttributes') or {}
+        slots = intent.get('slots', {})
 
-            # flowChange selection, no session attributes, initialize
-            if flow_phase == 'selection' and current_pamphlet_index is None:
-                logger.debug('Dialog Hook - Initialize Session Attributes')
-                pamphlet_slot = slots.get('UnderstandingSocialSecurity', None)
-                pamphlet_value = ''
+        phase = session_attrs.get('flowPhase', 'selection')
+        step = session_attrs.get('currentStep', 'selection_0')
 
-                # If no session attributes, start at the beginning, initialize session attributes
-                # Offer first pamphlet
-                if 'currentPamphletIndex' not in session_attributes:
-                    session_attributes.update(
-                        {
-                            'currentPamphletIndex': '1',  # add 1 for first pamphlet
-                            'flowPhase': 'selection',
-                            'selectedPamphlets': json.dumps([]),
-                        }
-                    )
-                return self.elicit_slot_response(
-                    slot_name='UnderstandingSocialSecurity',
-                    message='Would you like to hear the pamphlet on Understanding Social Security?',
-                    session_attributes=session_attributes,
-                    intent=intent_object,
+        if phase == 'selection':
+            return self.handle_selection_phase(slots, step, session_attrs, intent)
+
+        elif phase == 'address':
+            return self.handle_address_phase(slots, step, session_attrs, intent)
+
+        elif phase == 'confirmation':
+            return self.handle_confirmation_phase(slots, step, session_attrs, intent)
+
+        elif phase == 'completed':
+            return self.close_fulfillment(slots)
+
+        return self.delegate(session_attrs, intent)
+
+    ### Phase Handlers ###
+
+    def handle_selection_phase(self, slots, step, session_attrs, intent):
+        """Handle selection phase - collect pamphlet slots"""
+        # Get the index of the current step
+        index = int(step.replace('selection_', ''))
+
+        # Check if index is less than the 7 pamphlet slots
+        if index < len(PAMPHLET_SLOTS):
+            slot_name = PAMPHLET_SLOTS[index]
+
+            # If the slot is not filled, elicit it with a custom prompt
+            if not self.is_slot_filled(slots, slot_name):
+                prompt_list = self.prompts.get(slot_name)
+                if prompt_list and prompt_list[0]:
+                    prompt = prompt_list[0]
+                else:
+                    prompt = f'Do you want the pamphlet on {self.format_slot_name(slot_name)}?'
+
+                return self.elicit_slot(
+                    slot_name,
+                    session_attrs,
+                    f'selection_{index + 1}',
+                    intent,
+                    message=prompt,
                 )
-
-            # flowPhone selection, session attributes, continue
-            if flow_phase == 'selection' and current_pamphlet_index is not None:
-                pamphlet_slot = slots.get('UnderstandingSocialSecurity', None)
-                pamphlet_value = ''
-                if pamphlet_slot and 'value' in pamphlet_slot:
-                    pamphlet_value = (
-                        pamphlet_slot['value'].get('interpretedValue', '').lower()
-                    )
-                logger.debug('Pamphlet slot: %s', json.dumps(pamphlet_slot))
-                logger.debug('Pamphlet value: %s', json.dumps(pamphlet_value))
-
-                current_pamphlet_index = session_attributes.get(
-                    'currentPamphletIndex', 0
+            else:
+                # If the slot is filled, delegate to the next step (ask to hear next pamphlet)
+                return self.delegate(
+                    self.update_step(session_attrs, f'selection_{index + 1}'), intent
                 )
-                selected_pamphlets = json.loads(
-                    session_attributes.get('selectedPamphlets', '[]')
-                )
-                logger.debug('Dialog hook')
-                logger.debug('Current pamphlet index: %s', current_pamphlet_index)
-                logger.debug('Selected pamphlets: %s', json.dumps(selected_pamphlets))
-                logger.debug('Flow phase: %s', flow_phase)
-
-                # if current_pamphlet_index == 1-7:
-                if int(current_pamphlet_index) <= 7:
-                    # UnderstandingSocialSecurity, RetirementBenefits, DisabilityBenefits, SurvivorBenefits, HowWorkAffectsBenefits, BenefitsForChildrenWithDisabilities, WhatEveryWomanShouldKnowAboutSocialSecurity
-                    pamphlet_name = self.slot_names[str(current_pamphlet_index)]
-                    pamphlet_slot = slots[pamphlet_name]
-                    selected_pamphlets = json.loads(
-                        session_attributes.get('selectedPamphlets', '[]')
-                    )
-
-                    # Get pamphlet value
-                    pamphlet_value = ''
-                    if pamphlet_slot and 'value' in pamphlet_slot:
-                        pamphlet_value = (
-                            pamphlet_slot['value'].get('interpretedValue', '').lower()
-                        )
-                    logger.debug('Pamphlet name: %s', pamphlet_name)
-                    logger.debug('Pamphlet value: %s', pamphlet_value)
-                    logger.debug('Flow phase: %s', flow_phase)
-
-                    selected_pamphlets.append(pamphlet_name)
-                    logger.debug('Selected pamphlets: %s', selected_pamphlets)
-                    new_index = int(current_pamphlet_index) + 1
-                    # If yes they want pamphlet, add pamphlet to selected pamphlets and ask if they want to hear next pamphlet
-                    if 'yes' in pamphlet_value.lower():
-                        selected_pamphlets_json = json.dumps(selected_pamphlets)
-                        session_attributes.update(
-                            {
-                                'currentPamphletIndex': str(new_index),
-                                'selectedPamphlets': selected_pamphlets_json,
-                            }
-                        )
-                        return self.elicit_slot_response(
-                            slot_name='HearNextPamphletChoiceConfirmation',
-                            message='Before I get your mailing address, would you like to hear more choices?',
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
-                    # If no, move to address intent
-                    selected_pamphlets = json.loads(
-                        session_attributes.get('selectedPamphlets', '[]')
-                    )
-                    if 'no' in pamphlet_value.lower():
-                        session_attributes.update(
-                            {
-                                'selectedPamphlets': json.dumps(selected_pamphlets),
-                                'flowPhase': 'address',
-                            }
-                        )
-                        return self.elicit_slot_response(
-                            slot_name='StreetName',
-                            message='What is your street name?',
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
-
-                # Went through all the pamphlets, offer choices again
-                if int(current_pamphlet_index) > 7:
-                    # There are no pamphlets selected, offer to hear choices again
-                    if len(selected_pamphlets) == 0:
-                        return self.elicit_slot_response(
-                            slot_name='HearPamphletChoicesAgain',
-                            message='That was the last one. Would you like to hear those choices again?',
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
-                    if len(selected_pamphlets) > 0 and len(selected_pamphlets) < 7:
-                        session_attributes.update(
-                            {
-                                'flowPhase': 'address',
-                            }
-                        )
-                        return self.elicit_slot_response(
-                            slot_name='StreetName',
-                            message="Thanks. Now let's get your address. What is your street name?",
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
-                    if len(selected_pamphlets) == 7:
-                        session_attributes.update(
-                            {
-                                'selectedPamphlets': json.dumps(selected_pamphlets),
-                                'flowPhase': 'address',
-                            }
-                        )
-                        return self.elicit_slot_response(
-                            slot_name='StreetName',
-                            message="That's all the pamphlets I have to offer. Thanks. Now let's get your address. What's your street name?",
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
-
-                # Offer next pamphlet
-                if 'HearNextPamphletChoiceConfirmation' in slots:
-                    pamphlet_slot = slots['HearNextPamphletChoiceConfirmation']
-                    pamphlet_confirmation = ''
-                    if pamphlet_slot and 'value' in pamphlet_slot:
-                        pamphlet_confirmation = (
-                            pamphlet_slot['value'].get('interpretedValue', '').lower()
-                        )
-                    logger.debug(
-                        'Hear next pamphlet choice confirmation: %s',
-                        pamphlet_confirmation,
-                    )
-                    logger.debug('Flow phase: %s', flow_phase)
-                    slot_name = session_attributes['currentPamphletIndex']
-                    pamphlet_name = self.slot_names[slot_name]
-                    if 'yes' in pamphlet_confirmation:
-                        return self.elicit_slot_response(
-                            slot_name=pamphlet_name,
-                            message=f'Do you want the pamphlet on {pamphlet_name}?',
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
-                    if 'no' in pamphlet_confirmation:
-                        session_attributes.update(
-                            {
-                                'flowPhase': 'address',
-                            }
-                        )
-                        return self.elicit_slot_response(
-                            slot_name='StreetName',
-                            message="Thanks. Now let's get your address.What is your street name?",
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
-
-            if flow_phase == 'address':
-                logger.debug('Flow phase: %s', flow_phase)
-                logger.debug('Slots: %s', slots)
-
-                # Extract slot values properly
-                street_name_slot = slots.get('StreetName')
-                city_slot = slots.get('City')
-                state_slot = slots.get('State')
-                zip_code_slot = slots.get('ZipCode')
-
-                # Debug the slot values
-                logger.debug('StreetName slot: %s', street_name_slot)
-                logger.debug('City slot: %s', city_slot)
-                logger.debug('State slot: %s', state_slot)
-                logger.debug('ZipCode slot: %s', zip_code_slot)
-
-                # Check if ZipCode has a value (process in reverse order)
-                if zip_code_slot and 'value' in zip_code_slot:
-                    # ZipCode was provided, we're done with address collection
-                    zip_code_value = zip_code_slot['value'].get('interpretedValue', '')
-                    logger.debug('ZipCode value: %s', zip_code_value)
-                    # Here you would handle the completion of address collection
-                    # For now, just return a message
-                    return self.close_response(
-                        session_attributes=session_attributes,
-                        intent_name=intent_name,
-                        message='Thank you! Your pamphlets will be mailed to you shortly.',
-                    )
-
-                # Check if State has a value
-                if state_slot and 'value' in state_slot:
-                    # State was provided, move to ZipCode
-                    state_value = state_slot['value'].get('interpretedValue', '')
-                    logger.debug('State value: %s', state_value)
-                    return self.elicit_slot_response(
-                        slot_name='ZipCode',
-                        message='Thanks. What is your zip code?',
-                        session_attributes=session_attributes,
-                        intent=intent_object,
-                    )
-
-                # Check if City has a value
-                if city_slot and 'value' in city_slot:
-                    # City was provided, move to State
-                    city_value = city_slot['value'].get('interpretedValue', '')
-                    logger.debug('City value: %s', city_value)
-                    return self.elicit_slot_response(
-                        slot_name='State',
-                        message='Thanks. What is your state?',
-                        session_attributes=session_attributes,
-                        intent=intent_object,
-                    )
-
-                # Check if StreetName has a value
-                if street_name_slot and 'value' in street_name_slot:
-                    # Street name was provided, move to City
-                    street_name_value = street_name_slot['value'].get(
-                        'interpretedValue', ''
-                    )
-                    logger.debug('Street name value: %s', street_name_value)
-                    return self.elicit_slot_response(
-                        slot_name='City',
-                        message="Thanks. Now let's get your address. What is your city?",
-                        session_attributes=session_attributes,
-                        intent=intent_object,
-                    )
-
-                # If we get here and we're in address phase but no slots are filled,
-                # we need to start with street name
-                return self.elicit_slot_response(
-                    slot_name='StreetName',
-                    message="Thanks. Now let's get your address. What is your street name?",
-                    session_attributes=session_attributes,
-                    intent=intent_object,
-                )
-
-            # If pamphlet choices again, reset index and start over
-            if 'HearPamphletChoicesAgain' in slots:
-                current_pamphlet_index = session_attributes['currentPamphletIndex']
-                pamphlet_choices_again = slots['HearPamphletChoicesAgain']
-                pamphlet_name = self.slot_names[str(current_pamphlet_index)]
-                if (
-                    pamphlet_choices_again is not None
-                    and 'yes' in pamphlet_choices_again
-                ):
-                    session_attributes.update(
-                        {
-                            'currentPamphletIndex': '1',
-                            'selectedPamphlets': json.dumps([]),
-                        }
-                    )
-                    return self.elicit_slot_response(
-                        slot_name=pamphlet_name,
-                        message=f'Do you want the pamphlet on {pamphlet_name}?',
-                        session_attributes=session_attributes,
-                        intent=intent_object,
-                    )
-                if (
-                    pamphlet_choices_again is not None
-                    and 'no' in pamphlet_choices_again
-                ):
-                    session_attributes.update(
-                        {
-                            'currentPamphletIndex': '1',
-                        }
-                    )
-                    return self.close_response(
-                        session_attributes=session_attributes,
-                        intent_name='MainMenu',
-                        message="Alright. If you're finished, feel free to hang up. Otherwise, just hang on and I'll take you back to the Main Menu.",
-                    )
-
-        return self.fulfillment_hook(event)
-
-    def fulfillment_hook(self, event):
-        """Handle fulfillment - determine final action based on collected slots"""
-        intent_object = self.get_intent(event)
-        intent_name = intent_object.get('name', '')
-        slots = self.get_slots(event)
-        session_attributes = self.get_session_attributes(event)
-
-        logger.debug(
-            'Fulfillment hook - Intent: %s, Slots: %s, Session Attributes: %s',
-            json.dumps(intent_name),
-            json.dumps(slots),
-            json.dumps(session_attributes),
+        # All pamphlets processed → move to address collection
+        return self.delegate(
+            self.update_phase(session_attrs, 'address', 'address_street'), intent
         )
 
-        if intent_name == 'ProcessPamphletRequest':
-            return  # TODO
-        elif intent_name == 'RepeatRequest':
-            return  # TODO
-        elif intent_name == 'ReturnToMenu':
-            return  # TODO
+    def handle_address_phase(self, slots, step, session_attrs, intent):
+        """Handle address phase - collect address slots"""
+        steps = list(ADDRESS_STEPS.keys())
+        current_slot = ADDRESS_STEPS.get(step)
+        current_index = steps.index(step)
+
+        # if the current slot is not filled, elicit it
+        if not self.is_slot_filled(slots, current_slot):
+            return self.elicit_slot(
+                current_slot,
+                session_attrs,
+                steps[min(current_index + 1, len(steps) - 1)],
+                intent,
+            )
+
+        # if the current step is the last address step, delegate to confirmation phase
+        if step == 'address_zip':
+            return self.delegate(
+                self.update_phase(session_attrs, 'confirmation', 'confirmation_start'),
+                intent,
+            )
+        # otherwise, delegate to the next step
         else:
-            return  # TODO
+            return self.delegate(
+                self.update_step(session_attrs, steps[current_index + 1]), intent
+            )
 
-    ### Helper functions to extract data from Lex events ###
+    def handle_confirmation_phase(self, step, session_attrs, intent):
+        """Handle confirmation phase - collect address slots"""
+        if step == 'confirmation_start':
+            return self.elicit_slot(
+                'Finished', session_attrs, 'confirmation_done', intent
+            )
+        elif step == 'confirmation_done':
+            return self.delegate(
+                self.update_phase(session_attrs, 'completed', 'done'), intent
+            )
 
-    def get_intent(self, event):
-        """Extract intent from event"""
-        return event.get('sessionState', {}).get('intent', {})
-
-    def get_slots(self, event):
-        """Extract slots from event"""
-        return event.get('sessionState', {}).get('intent', {}).get('slots', {})
-
-    def get_slot_value(self, slots, slot_name):
-        """Extract slot value from event"""
-        return slots.get(slot_name, '')
-
-    def get_session_attributes(self, event):
-        """Extract session attributes from event"""
-        return event.get('sessionState', {}).get('sessionAttributes', {})
-
-    ### Helper functions to build Lex responses ###
-
-    def elicit_slot_response(self, slot_name, message, session_attributes, intent):
-        """Build "ask for slot" response"""
-        return {
-            'sessionState': {
-                'dialogAction': {'type': 'ElicitSlot', 'slotToElicit': slot_name},
-                'intent': intent,
-                'sessionAttributes': session_attributes,
-            },
-            'messages': [{'contentType': 'PlainText', 'content': message}],
-        }
-
-    def delegate_response(self, session_attributes, intent_object):
-        """Build "let Lex continue" response"""
-        return {
-            'sessionState': {
-                'dialogAction': {'type': 'Delegate'},
-                'intent': intent_object,
-                'sessionAttributes': session_attributes,
-            },
-        }
-
-    def close_response(self, session_attributes, intent_name, message):
-        """Build "conversation finished" response"""
+    def close_fulfillment(self, slots):
+        """Close fulfillment"""
         return {
             'sessionState': {
                 'dialogAction': {'type': 'Close'},
                 'intent': {
-                    'name': intent_name,
-                    'state': 'Fulfilled',  # or 'Failed'
+                    'name': 'ProcessPamphletRequest',
+                    'state': 'Fulfilled',
+                    'slots': slots,
                 },
+            },
+            'messages': [
+                {
+                    'contentType': 'PlainText',
+                    'content': 'Thank you! Your pamphlets will be mailed shortly.',
+                }
+            ],
+        }
+
+    ### Helpers ###
+
+    def is_slot_filled(self, slots, name):
+        """Check if a slot is filled
+        If the current slot is not filled, call elicit_slot
+        It also sets currentStep to the next step
+        """
+        return bool(
+            slots.get(name) and slots[name].get('value', {}).get('interpretedValue')
+        )
+
+    def update_phase(self, session_attrs, new_phase, new_step):
+        """Update the current phase and step"""
+        session_attrs.update(
+            {
+                'flowPhase': new_phase,
+                'currentStep': new_step,
+            }
+        )
+        return session_attrs
+
+    def update_step(self, session_attrs, new_step):
+        """Update the current step"""
+        session_attrs['currentStep'] = new_step
+        return session_attrs
+
+    def format_slot_name(slot_name):
+        return re.sub(r'(?<!^)(?=[A-Z])', ' ', slot_name)
+
+    def elicit_slot(self, slot_name, session_attrs, next_step, intent, message=None):
+        """Elicit a slot, optionally with a custom prompt message"""
+        response = {
+            'sessionState': {
+                'dialogAction': {
+                    'type': 'ElicitSlot',
+                    'slotToElicit': slot_name,
+                },
+                'sessionAttributes': self.update_step(session_attrs, next_step),
+                'intent': {
+                    'name': intent['name'],
+                    'slots': intent.get('slots'),
+                    'state': 'InProgress',
+                },
+            }
+        }
+
+        if message:
+            response['messages'] = [
+                {
+                    'contentType': 'PlainText',
+                    'content': message,
+                }
+            ]
+
+        return response
+
+    def delegate(self, session_attrs, intent):
+        """Delegate to Lex"""
+        return {
+            'sessionState': {
+                'dialogAction': {'type': 'Delegate'},
+                'sessionAttributes': session_attrs,
+                'intent': {
+                    'name': intent['name'],
+                    'slots': intent.get('slots'),
+                    'state': 'InProgress',
+                },
+            }
+        }
+
+    def get_elicitation_prompt(self, slot_name, attempt=0):
+        return
+
+    def elicit_slot_response(
+        self, slot_to_elicit, session_attributes, intent_name, slots, attempt=0
+    ):
+        """
+        Build Lex response to elicit a slot with the right prompt.
+        """
+        prompt_text = self.get_elicitation_prompt(slot_to_elicit, attempt)
+
+        return {
+            'sessionState': {
+                'dialogAction': {'type': 'ElicitSlot', 'slotToElicit': slot_to_elicit},
+                'intent': {'name': intent_name, 'slots': slots, 'state': 'InProgress'},
                 'sessionAttributes': session_attributes,
             },
-            'messages': [{'contentType': 'PlainText', 'content': message}],
+            'messages': [{'contentType': 'PlainText', 'content': prompt_text}],
         }
 
 

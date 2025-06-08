@@ -147,7 +147,7 @@ class PamphletBot(Construct):
                             # Confirmation slots
                             SimpleSlot(
                                 slot_type_name='AMAZON.Confirmation',
-                                name='HearPamphletChoicesAgain',
+                                name='HearAllChoicesAgain',
                                 elicitation_messages=['Placeholder'],
                                 description='Pamphlet choices again',
                                 required=False,
