@@ -230,17 +230,8 @@ class PamphletBot(Construct):
                             'next',
                             'pass',
                             'pass on this one',
-                        ],
-                        slots=[
-                            SimpleSlot(
-                                slot_type_name='AMAZON.Confirmation',
-                                name='SkipPamphlet',
-                                elicitation_messages=['Placeholder'],
-                                description='Skip pamphlet',
-                                required=False,
-                                allow_interrupt=True,
-                                max_retries=2,
-                            ),
+                            'more',
+                            'more pamphlets',
                         ],
                     ),
                     SimpleIntent(
