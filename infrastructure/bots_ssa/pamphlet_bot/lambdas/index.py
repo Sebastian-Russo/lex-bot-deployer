@@ -939,9 +939,12 @@ class PamphletHandler:
                 )
                 message = f'Sure, let me repeat that: {last_message}'
                 logger.debug('Message: %s', message)
+                
+                # Preserve the current flow phase instead of always setting to 'selection'
+                current_flow_phase = session_attributes.get('flowPhase', 'selection')
                 session_attributes.update(
                     {
-                        'flowPhase': 'selection',
+                        'flowPhase': current_flow_phase,
                         'lastMessage': message,
                         'lastSlot': last_slot,
                     }
@@ -990,6 +993,13 @@ class PamphletHandler:
             json.dumps(slots),
             json.dumps(session_attributes),
         )
+        
+        # Check if we're in the address flow phase and we should redirect back to dialog_hook
+        # This prevents premature fulfillment when we're still collecting address information
+        flow_phase = session_attributes.get('flowPhase', '')
+        if flow_phase == 'address' and not session_attributes.get('fullAddress'):
+            logger.debug('In address flow phase but address collection not complete, redirecting to dialog_hook')
+            return self.dialog_hook(event)
 
         if intent_name == 'ProcessPamphletRequest':
             # Extract session attributes
