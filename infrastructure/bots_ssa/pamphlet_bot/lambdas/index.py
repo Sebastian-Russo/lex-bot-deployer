@@ -1,3 +1,7 @@
+"""
+Handle pamphlet bot
+"""
+
 import json
 import logging
 import os
@@ -8,6 +12,8 @@ logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
 
 
 class PamphletHandler:
+    """Handle pamphlet bot"""
+
     def __init__(self):
         pass
 
@@ -63,16 +69,20 @@ class PamphletHandler:
                 # If no session attributes, start at the beginning, initialize session attributes
                 # Offer first pamphlet
                 if 'currentPamphletIndex' not in session_attributes:
+                    message = 'Would you like to hear the pamphlet on Understanding Social Security?'
+                    logger.debug('Message: %s', message)
                     session_attributes.update(
                         {
                             'currentPamphletIndex': '1',  # add 1 for first pamphlet
                             'flowPhase': 'selection',
                             'selectedPamphlets': json.dumps([]),
+                            'lastMessage': message,
+                            'lastSlot': 'UnderstandingSocialSecurity',
                         }
                     )
                 return self.elicit_slot_response(
                     slot_name='UnderstandingSocialSecurity',
-                    message='Would you like to hear the pamphlet on Understanding Social Security?',
+                    message=message,
                     session_attributes=session_attributes,
                     intent=intent_object,
                 )
@@ -125,36 +135,52 @@ class PamphletHandler:
                     # If yes they want pamphlet, add pamphlet to selected pamphlets and ask if they want to hear next pamphlet
                     if 'yes' in pamphlet_value.lower():
                         selected_pamphlets.append(pamphlet_name)
+                        message = 'Before I get your mailing address, would you like to hear more choices?'
+                        logger.debug('Message: %s', message)
                         session_attributes.update(
                             {
                                 'currentPamphletIndex': str(new_index),
                                 'selectedPamphlets': json.dumps(selected_pamphlets),
+                                'lastMessage': message,
+                                'lastSlot': 'HearNextPamphletChoiceConfirmation',
                             }
                         )
                         return self.elicit_slot_response(
                             slot_name='HearNextPamphletChoiceConfirmation',
-                            message='Before I get your mailing address, would you like to hear more choices?',
+                            message=message,
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
                     # If no, ask for next pamphlet before moving to address intent
                     if 'no' in pamphlet_value.lower():
                         if len(selected_pamphlets) == 0:
+                            message = f'Do you want the pamphlet on {pamphlet_name}?'
+                            logger.debug('Message: %s', message)
+                            session_attributes.update(
+                                {
+                                    'lastMessage': message,
+                                    'lastSlot': pamphlet_name,
+                                }
+                            )
                             return self.elicit_slot_response(
                                 slot_name=pamphlet_name,
-                                message=f"You haven't selected any pamphlets yet. Do you want the pamphlet on {pamphlet_name}?",
+                                message=message,
                                 session_attributes=session_attributes,
                                 intent=intent_object,
                             )
+                        message = 'Before I get your mailing address, would you like to hear more choices?'
+                        logger.debug('Message: %s', message)
                         session_attributes.update(
                             {
                                 'currentPamphletIndex': str(new_index),
                                 'selectedPamphlets': json.dumps(selected_pamphlets),
+                                'lastMessage': message,
+                                'lastSlot': 'HearNextPamphletChoiceConfirmation',
                             }
                         )
                         return self.elicit_slot_response(
                             slot_name='HearNextPamphletChoiceConfirmation',
-                            message='Before I get your mailing address, would you like to hear more choices?',
+                            message=message,
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
@@ -163,34 +189,50 @@ class PamphletHandler:
                 if int(current_pamphlet_index) > 7:
                     # There are no pamphlets selected, offer to hear choices again
                     if len(selected_pamphlets) == 0:
+                        message = 'That was the last pamphlet. Would you like to hear those choices again?'
+                        logger.debug('Message: %s', message)
+                        session_attributes.update(
+                            {
+                                'lastMessage': message,
+                                'lastSlot': 'HearAllChoicesAgain',
+                            }
+                        )
                         return self.elicit_slot_response(
                             slot_name='HearAllChoicesAgain',
-                            message='That was the last one. Would you like to hear those choices again?',
+                            message=message,
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
                     if len(selected_pamphlets) > 0 and len(selected_pamphlets) < 7:
+                        message = "Thanks. Now let's get your address. What is your street name?"
+                        logger.debug('Message: %s', message)
                         session_attributes.update(
                             {
                                 'flowPhase': 'address',
+                                'lastMessage': message,
+                                'lastSlot': 'StreetName',
                             }
                         )
                         return self.elicit_slot_response(
                             slot_name='StreetName',
-                            message="Thanks. Now let's get your address. What is your street name?",
+                            message=message,
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
                     if len(selected_pamphlets) == 7:
+                        message = "That's all the pamphlets I have to offer. Thanks. Now let's get your address. What's your street name?"
+                        logger.debug('Message: %s', message)
                         session_attributes.update(
                             {
                                 'selectedPamphlets': json.dumps(selected_pamphlets),
                                 'flowPhase': 'address',
+                                'lastMessage': message,
+                                'lastSlot': 'StreetName',
                             }
                         )
                         return self.elicit_slot_response(
                             slot_name='StreetName',
-                            message="That's all the pamphlets I have to offer. Thanks. Now let's get your address. What's your street name?",
+                            message=message,
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
@@ -212,29 +254,41 @@ class PamphletHandler:
                     pamphlet_name = self.slot_names[slot_name]
                     if 'yes' in pamphlet_confirmation:
                         slots['HearNextPamphletChoiceConfirmation'] = None
+                        message = f'Do you want the pamphlet on {pamphlet_name}?'
+                        logger.debug('Message: %s', message)
+                        session_attributes.update(
+                            {
+                                'lastMessage': message,
+                                'lastSlot': pamphlet_name,
+                            }
+                        )
                         return self.elicit_slot_response(
                             slot_name=pamphlet_name,
-                            message=f'Do you want the pamphlet on {pamphlet_name}?',
+                            message=message,
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
                     if 'no' in pamphlet_confirmation:
                         slots['HearNextPamphletChoiceConfirmation'] = None
+                        message = "Thanks. Now let's get your address. What is your street name?"
+                        logger.debug('Message: %s', message)
                         session_attributes.update(
                             {
                                 'flowPhase': 'address',
+                                'lastMessage': message,
+                                'lastSlot': 'StreetName',
                             }
                         )
                         return self.elicit_slot_response(
                             slot_name='StreetName',
-                            message="Thanks. Now let's get your address. What is your street name?",
+                            message=message,
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
 
             if flow_phase == 'address':
                 logger.debug('Flow phase: %s', flow_phase)
-                logger.debug('Slots: %s', slots)
+                logger.debug('Slots: %s', json.dumps(slots))
 
                 # Extract slot values properly
                 street_name_slot = slots.get('StreetName')
@@ -280,14 +334,20 @@ class PamphletHandler:
                     logger.debug('Formatted address: %s', full_address)
 
                     # Update session attributes with full address and change flow phase
+                    message = f'Is this your address: {full_address}?'
+                    logger.debug('Message: %s', message)
                     session_attributes.update(
-                        {'fullAddress': full_address, 'flowPhase': 'confirmation'}
+                        {
+                            'fullAddress': full_address,
+                            'flowPhase': 'confirmation',
+                            'lastMessage': message,
+                            'lastSlot': 'AddressConfirmation',
+                        }
                     )
-
                     # Elicit AddressConfirmation slot
                     return self.elicit_slot_response(
                         slot_name='AddressConfirmation',
-                        message=f'Is this your address: {full_address}?',
+                        message=message,
                         session_attributes=session_attributes,
                         intent=intent_object,
                     )
@@ -297,9 +357,18 @@ class PamphletHandler:
                     # State was provided, move to ZipCode
                     state_value = state_slot['value'].get('interpretedValue', '')
                     logger.debug('State value: %s', state_value)
+                    message = 'Thanks. What is your zip code?'
+                    logger.debug('Message: %s', message)
+                    session_attributes.update(
+                        {
+                            'flowPhase': 'address',
+                            'lastMessage': message,
+                            'lastSlot': 'ZipCode',
+                        }
+                    )
                     return self.elicit_slot_response(
                         slot_name='ZipCode',
-                        message='Thanks. What is your zip code?',
+                        message=message,
                         session_attributes=session_attributes,
                         intent=intent_object,
                     )
@@ -309,9 +378,18 @@ class PamphletHandler:
                     # City was provided, move to State
                     city_value = city_slot['value'].get('interpretedValue', '')
                     logger.debug('City value: %s', city_value)
+                    message = 'Thanks. What is your state?'
+                    logger.debug('Message: %s', message)
+                    session_attributes.update(
+                        {
+                            'flowPhase': 'address',
+                            'lastMessage': message,
+                            'lastSlot': 'State',
+                        }
+                    )
                     return self.elicit_slot_response(
                         slot_name='State',
-                        message='Thanks. What is your state?',
+                        message=message,
                         session_attributes=session_attributes,
                         intent=intent_object,
                     )
@@ -323,17 +401,37 @@ class PamphletHandler:
                         'interpretedValue', ''
                     )
                     logger.debug('Street name value: %s', street_name_value)
+                    message = 'Thanks. What is your city?'
+                    logger.debug('Message: %s', message)
+                    session_attributes.update(
+                        {
+                            'flowPhase': 'address',
+                            'lastMessage': message,
+                            'lastSlot': 'City',
+                        }
+                    )
                     return self.elicit_slot_response(
                         slot_name='City',
-                        message='Thanks. What is your city?',
+                        message=message,
                         session_attributes=session_attributes,
                         intent=intent_object,
                     )
 
                 # If we get here, start with street name
+                message = (
+                    "Thanks. Now let's get your address. What is your street name?"
+                )
+                logger.debug('Message: %s', message)
+                session_attributes.update(
+                    {
+                        'flowPhase': 'address',
+                        'lastMessage': message,
+                        'lastSlot': 'StreetName',
+                    }
+                )
                 return self.elicit_slot_response(
                     slot_name='StreetName',
-                    message="Thanks. Now let's get your address. What is your street name?",
+                    message=message,
                     session_attributes=session_attributes,
                     intent=intent_object,
                 )
@@ -362,16 +460,20 @@ class PamphletHandler:
 
                     # If no pamphlets selected, prompt to select pamphlets again
                     if not selected_pamphlets:
+                        message = "You haven't selected any pamphlets. Let's start again. Would you like to hear the pamphlet on Understanding Social Security?"
+                        logger.debug('Message: %s', message)
                         session_attributes.update(
                             {
                                 'flowPhase': 'selection',
                                 'currentPamphletIndex': '1',
                                 'fullAddress': '',  # Clear address since we're restarting
+                                'lastMessage': message,
+                                'lastSlot': 'UnderstandingSocialSecurity',
                             }
                         )
                         return self.elicit_slot_response(
                             slot_name='UnderstandingSocialSecurity',
-                            message="You haven't selected any pamphlets. Let's start again. Would you like to hear the pamphlet on Understanding Social Security?",
+                            message=message,
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
@@ -396,15 +498,19 @@ class PamphletHandler:
                         intent_object['slots']['City'] = None
                         intent_object['slots']['State'] = None
                         intent_object['slots']['ZipCode'] = None
+                        message = "Okay, let's try again. What is your street name?"
+                        logger.debug('Message: %s', message)
                         session_attributes.update(
                             {
                                 'flowPhase': 'address',
                                 'fullAddress': '',  # Clear stored address
+                                'lastMessage': message,
+                                'lastSlot': 'StreetName',
                             }
                         )
                         return self.elicit_slot_response(
                             slot_name='StreetName',
-                            message="Okay, let's try again. What is your street name?",
+                            message=message,
                             session_attributes=session_attributes,
                             intent=intent_object,
                         )
@@ -413,18 +519,22 @@ class PamphletHandler:
                 full_address = session_attributes.get('fullAddress', '')
                 if not full_address:
                     logger.debug('No fullAddress found, restarting address collection')
+                    message = "Okay, let's try again. What is your street name?"
+                    logger.debug('Message: %s', message)
                     session_attributes.update(
                         {
                             'flowPhase': 'address',
                             'fullAddress': '',
+                            'lastMessage': message,
+                            'lastSlot': 'StreetName',
                         }
                     )
-                return self.elicit_slot_response(
-                    slot_name='AddressConfirmation',  ##
-                    message=f'Is this your address: {full_address}?',
-                    session_attributes=session_attributes,
-                    intent=intent_object,
-                )
+                    return self.elicit_slot_response(
+                        slot_name='AddressConfirmation',  ##
+                        message=f'Is this your address: {full_address}?',
+                        session_attributes=session_attributes,
+                        intent=intent_object,
+                    )
 
             # If pamphlet choices again, reset index and start over
             if (
@@ -441,16 +551,20 @@ class PamphletHandler:
                     pamphlet_choices_again is not None
                     and 'yes' in pamphlet_choices_again
                 ):
+                    message = "You haven't selected any pamphlets. Let's start again. Would you like to hear the pamphlet on Understanding Social Security?"
+                    logger.debug('Message: %s', message)
                     session_attributes.update(
                         {
                             'currentPamphletIndex': '1',
                             'selectedPamphlets': json.dumps([]),
                             'flowPhase': 'selection',
+                            'lastMessage': message,
+                            'lastSlot': 'UnderstandingSocialSecurity',
                         }
                     )
                     return self.elicit_slot_response(
                         slot_name='UnderstandingSocialSecurity',
-                        message='Would you like to hear the pamphlet on Understanding Social Security?',
+                        message=message,
                         session_attributes=session_attributes,
                         intent=intent_object,
                     )
@@ -458,15 +572,19 @@ class PamphletHandler:
                     pamphlet_choices_again is not None
                     and 'no' in pamphlet_choices_again
                 ):
+                    message = "Alright. If you're finished, feel free to hang up. Otherwise, just hang on and I'll take you back to the Main Menu."
+                    logger.debug('Message: %s', message)
                     session_attributes.update(
                         {
                             'currentPamphletIndex': '1',
+                            'lastMessage': message,
+                            'lastSlot': 'MainMenu',
                         }
                     )
                     return self.close_response(
                         session_attributes=session_attributes,
                         intent_name='MainMenu',
-                        message="Alright. If you're finished, feel free to hang up. Otherwise, just hang on and I'll take you back to the Main Menu.",
+                        message=message,
                     )
 
         elif intent_name == 'Skip':
@@ -494,15 +612,31 @@ class PamphletHandler:
                 intent_object['name'] = (
                     'ProcessPamphletRequest'  # Switch back to main intent
                 )
+                message = f'Would you like to hear the pamphlet on {self._format_pamphlet_name(next_pamphlet)}?'
+                logger.debug('Message: %s', message)
+                session_attributes.update(
+                    {
+                        'flowPhase': 'selection',
+                        'lastMessage': message,
+                        'lastSlot': next_pamphlet,
+                    }
+                )
                 return self.elicit_slot_response(
                     slot_name=next_pamphlet,
-                    message=f'Would you like to hear the pamphlet on {self._format_pamphlet_name(next_pamphlet)}?',
+                    message=message,
                     session_attributes=session_attributes,
                     intent=intent_object,
                 )
             # If at last pamphlet
             # if current_index == 7:
             #     intent_object['name'] = 'ProcessPamphletRequest' # Switch back to main intent
+            # session_attributes.update(
+            #     {
+            #         'flowPhase': 'selection',
+            #         'lastMessage': 'That was the last one. Would you like to hear those choices again?',
+            #         'lastSlot': 'HearAllChoicesAgain',
+            #     }
+            # )
             #     return self.elicit_slot_response(
             #         slot_name='HearAllChoicesAgain',
             #         message='That was the last one. Would you like to hear those choices again?',
@@ -512,21 +646,101 @@ class PamphletHandler:
             else:
                 if not selected_pamphlets:
                     intent_object['name'] = 'ProcessPamphletRequest'
+                    message = 'That was the last one. Would you like to hear those choices again?'
+                    logger.debug('Message: %s', message)
+                    session_attributes.update(
+                        {
+                            'flowPhase': 'selection',
+                            'lastMessage': message,
+                            'lastSlot': 'HearAllChoicesAgain',
+                        }
+                    )
                     return self.elicit_slot_response(
                         slot_name='HearAllChoicesAgain',
-                        message='That was the last one. Would you like to hear those choices again?',
+                        message=message,
                         session_attributes=session_attributes,
                         intent=intent_object,
                     )
                 else:
-                    session_attributes['flowPhase'] = 'address'
-                    intent_object['name'] = 'ProcessPamphletRequest'
+                    intent_object['name'] = 'StreetName'  # Here
+                    message = (
+                        "Thanks. Now let's get your address. What is your street name?"
+                    )
+                    logger.debug('Message: %s', message)
+                    session_attributes.update(
+                        {
+                            'flowPhase': 'address',
+                            'lastMessage': message,
+                            'lastSlot': 'StreetName',
+                        }
+                    )
                     return self.elicit_slot_response(
                         slot_name='StreetName',
-                        message="Thanks. Now let's get your address. What is your street name?",
+                        message=message,
                         session_attributes=session_attributes,
                         intent=intent_object,
                     )
+
+        elif intent_name == 'Repeat':
+            logger.debug('RepeatRequest Intent')
+            last_message = session_attributes.get('lastMessage', '')
+            last_slot = session_attributes.get('lastSlot', '')
+            logger.debug('Last message: %s', last_message)
+            logger.debug('Last slot: %s', last_slot)
+
+            # Valid slots for re-elicitation
+            valid_slots = list(self.slot_names.values()) + [
+                'HearNextPamphletChoiceConfirmation',
+                'HearAllChoicesAgain',
+                'StreetName',
+                'City',
+                'State',
+                'ZipCode',
+                'AddressConfirmation',
+            ]
+
+            # If valid last message and slot
+            if last_message and last_slot and last_slot in valid_slots:
+                intent_object['name'] = (
+                    'ProcessPamphletRequest'  # Switch back to main intent
+                )
+                message = f'Sure, let me repeat that: {last_message}'
+                logger.debug('Message: %s', message)
+                session_attributes.update(
+                    {
+                        'flowPhase': 'selection',
+                        'lastMessage': message,
+                        'lastSlot': last_slot,
+                    }
+                )
+                return self.elicit_slot_response(
+                    slot_name=last_slot,
+                    message=message,
+                    session_attributes=session_attributes,
+                    intent=intent_object,
+                )
+            # If no valid last message or slot
+            else:
+                logger.warning(
+                    'No valid last message or slot to repeat: message=%s, slot=%s',
+                    last_message,
+                    last_slot,
+                )
+                intent_object['name'] = 'ProcessPamphletRequest'
+                message = "Sorry, there's nothing to repeat yet. Would you like a pamphlet on Understanding Social Security?"
+                session_attributes.update(
+                    {
+                        'flowPhase': 'selection',
+                        'lastMessage': message,
+                        'lastSlot': 'UnderstandingSocialSecurity',
+                    }
+                )
+                return self.elicit_slot_response(
+                    slot_name='UnderstandingSocialSecurity',
+                    message=message,
+                    session_attributes=session_attributes,
+                    intent=intent_object,
+                )
 
         return self.fulfillment_hook(event)
 
@@ -594,11 +808,27 @@ class PamphletHandler:
                 message='Moving on.',
             )
 
-        elif intent_name == 'RepeatRequest':
-            return self.close_response(
+        elif intent_name == 'Repeat':
+            logger.warning('Repeat intent reached fulfillment_hook unexpectedly')
+            flow_phase = session_attributes.get('flowPhase', 'selection')
+            message = "Sorry, I didn't catch that. Let's continue where we left off."
+            default_slot = (
+                'UnderstandingSocialSecurity'
+                if flow_phase == 'selection'
+                else 'StreetName'
+                if flow_phase == 'address'
+                else 'AddressConfirmation'
+            )
+            session_attributes.update(
+                {'lastMessage': message, 'lastSlot': default_slot}
+            )
+            # Set intent to main intent, return to the main flow
+            intent_object['name'] = 'ProcessPamphletRequest'
+            return self.elicit_slot_response(
+                slot_name=default_slot,
+                message=message,
                 session_attributes=session_attributes,
-                intent_name=intent_name,
-                message='Could you please repeat that one more time?',
+                intent=intent_object,
             )
         elif intent_name == 'ReturnToMenu':
             return self.close_response(

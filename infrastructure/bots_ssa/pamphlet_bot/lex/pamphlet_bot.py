@@ -243,17 +243,6 @@ class PamphletBot(Construct):
                             'say it again',
                             'tell me again',
                         ],
-                        slots=[
-                            SimpleSlot(
-                                slot_type_name='AMAZON.Confirmation',
-                                name='RepeatRequest',
-                                elicitation_messages=['Placeholder'],
-                                description='Repeat request',
-                                required=False,
-                                allow_interrupt=True,
-                                max_retries=2,
-                            ),
-                        ],
                     ),
                     SimpleIntent(
                         name='ReturnToMenu',
