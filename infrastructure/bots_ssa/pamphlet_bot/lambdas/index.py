@@ -204,7 +204,7 @@ class PamphletHandler:
                             intent=intent_object,
                         )
                     if len(selected_pamphlets) > 0 and len(selected_pamphlets) < 7:
-                        message = "Thanks. Now let's get your address. What is your street name?"
+                        message = "Thanks. Now let's get your address. What is your street name? (1)"
                         logger.debug('Message: %s', message)
                         session_attributes.update(
                             {
@@ -270,7 +270,7 @@ class PamphletHandler:
                         )
                     if 'no' in pamphlet_confirmation:
                         slots['HearNextPamphletChoiceConfirmation'] = None
-                        message = "Thanks. Now let's get your address. What is your street name?"
+                        message = "Thanks. Now let's get your address. What is your street name? (2)"
                         logger.debug('Message: %s', message)
                         session_attributes.update(
                             {
@@ -328,6 +328,114 @@ class PamphletHandler:
                         state_value,
                         zip_code_value,
                     )
+                    
+                    # Format the address
+                    full_address = f'{street_name_value}, {city_value}, {state_value}, {zip_code_value}'
+                    logger.debug('Formatted address: %s', full_address)
+
+                    # Update session attributes with full address and change flow phase
+                    message = f'Is this your address: {full_address}?'
+                    logger.debug('Message: %s', message)
+                    session_attributes.update(
+                        {
+                            'fullAddress': full_address,
+                            'flowPhase': 'confirmation',
+                            'lastMessage': message,
+                            'lastSlot': 'AddressConfirmation',
+                        }
+                    )
+                    # Elicit AddressConfirmation slot
+                    return self.elicit_slot_response(
+                        slot_name='AddressConfirmation',
+                        message=message,
+                        session_attributes=session_attributes,
+                        intent=intent_object,
+                    )
+
+                # Check if we're in address flow and last slot was ZipCode
+                # This captures cases where Lex doesn't recognize the input as a valid slot value
+                if (
+                    flow_phase == 'address'
+                    and session_attributes.get('lastSlot') == 'ZipCode'
+                    and 'inputTranscript' in event
+                ):
+                    # Manually capture the user's input as the zip code
+                    user_input = event.get('inputTranscript', '')
+                    logger.debug(
+                        'Manually capturing zip code from input: %s', user_input
+                    )
+
+                    if user_input and user_input.strip():
+                        # Set the zip code slot value manually
+                        if 'slots' not in intent_object:
+                            intent_object['slots'] = {}
+
+                        intent_object['slots']['ZipCode'] = {
+                            'value': {
+                                'originalValue': user_input,
+                                'interpretedValue': user_input,
+                                'resolvedValues': [user_input],
+                            },
+                            'shape': 'Scalar',
+                        }
+
+                        # Get all the address values
+                        street_name_value = (
+                            street_name_slot['value'].get('interpretedValue', '')
+                            if street_name_slot and 'value' in street_name_slot
+                            else intent_object['slots']
+                            .get('StreetName', {})
+                            .get('value', {})
+                            .get('interpretedValue', '')
+                        )
+                        city_value = (
+                            city_slot['value'].get('interpretedValue', '')
+                            if city_slot and 'value' in city_slot
+                            else intent_object['slots']
+                            .get('City', {})
+                            .get('value', {})
+                            .get('interpretedValue', '')
+                        )
+                        state_value = (
+                            state_slot['value'].get('interpretedValue', '')
+                            if state_slot and 'value' in state_slot
+                            else intent_object['slots']
+                            .get('State', {})
+                            .get('value', {})
+                            .get('interpretedValue', '')
+                        )
+                        zip_code_value = user_input
+
+                        logger.debug(
+                            'Address values - Street: %s, City: %s, State: %s, Zip: %s',
+                            street_name_value,
+                            city_value,
+                            state_value,
+                            zip_code_value,
+                        )
+
+                        # Now that we have all address components, format the address and move to confirmation
+                        full_address = f'{street_name_value}, {city_value}, {state_value}, {zip_code_value}'
+                        logger.debug('Formatted address from manual input: %s', full_address)
+
+                        # Update session attributes with full address and change flow phase
+                        message = f'Is this your address: {full_address}?'
+                        logger.debug('Message: %s', message)
+                        session_attributes.update(
+                            {
+                                'fullAddress': full_address,
+                                'flowPhase': 'confirmation',
+                                'lastMessage': message,
+                                'lastSlot': 'AddressConfirmation',
+                            }
+                        )
+                        # Elicit AddressConfirmation slot
+                        return self.elicit_slot_response(
+                            slot_name='AddressConfirmation',
+                            message=message,
+                            session_attributes=session_attributes,
+                            intent=intent_object,
+                        )
 
                     # Format the address
                     full_address = f'{street_name_value}, {city_value}, {state_value}, {zip_code_value}'
@@ -373,6 +481,48 @@ class PamphletHandler:
                         intent=intent_object,
                     )
 
+                # Check if we're in address flow and last slot was State
+                # This captures cases where Lex doesn't recognize the input as a valid slot value
+                if (
+                    flow_phase == 'address'
+                    and session_attributes.get('lastSlot') == 'State'
+                    and 'inputTranscript' in event
+                ):
+                    # Manually capture the user's input as the state
+                    user_input = event.get('inputTranscript', '')
+                    logger.debug('Manually capturing state from input: %s', user_input)
+
+                    if user_input and user_input.strip():
+                        # Set the state slot value manually
+                        if 'slots' not in intent_object:
+                            intent_object['slots'] = {}
+
+                        intent_object['slots']['State'] = {
+                            'value': {
+                                'originalValue': user_input,
+                                'interpretedValue': user_input,
+                                'resolvedValues': [user_input],
+                            },
+                            'shape': 'Scalar',
+                        }
+
+                        # Move to ZipCode
+                        message = 'Thanks. What is your zip code?'
+                        logger.debug('Message: %s', message)
+                        session_attributes.update(
+                            {
+                                'flowPhase': 'address',
+                                'lastMessage': message,
+                                'lastSlot': 'ZipCode',
+                            }
+                        )
+                        return self.elicit_slot_response(
+                            slot_name='ZipCode',
+                            message=message,
+                            session_attributes=session_attributes,
+                            intent=intent_object,
+                        )
+
                 # Check if City has a value, ask for State
                 if city_slot and 'value' in city_slot:
                     # City was provided, move to State
@@ -393,6 +543,48 @@ class PamphletHandler:
                         session_attributes=session_attributes,
                         intent=intent_object,
                     )
+
+                # Check if we're in address flow and last slot was City
+                # This captures cases where Lex doesn't recognize the input as a valid slot value
+                if (
+                    flow_phase == 'address'
+                    and session_attributes.get('lastSlot') == 'City'
+                    and 'inputTranscript' in event
+                ):
+                    # Manually capture the user's input as the city
+                    user_input = event.get('inputTranscript', '')
+                    logger.debug('Manually capturing city from input: %s', user_input)
+
+                    if user_input and user_input.strip():
+                        # Set the city slot value manually
+                        if 'slots' not in intent_object:
+                            intent_object['slots'] = {}
+
+                        intent_object['slots']['City'] = {
+                            'value': {
+                                'originalValue': user_input,
+                                'interpretedValue': user_input,
+                                'resolvedValues': [user_input],
+                            },
+                            'shape': 'Scalar',
+                        }
+
+                        # Move to State
+                        message = 'Thanks. What is your state?'
+                        logger.debug('Message: %s', message)
+                        session_attributes.update(
+                            {
+                                'flowPhase': 'address',
+                                'lastMessage': message,
+                                'lastSlot': 'State',
+                            }
+                        )
+                        return self.elicit_slot_response(
+                            slot_name='State',
+                            message=message,
+                            session_attributes=session_attributes,
+                            intent=intent_object,
+                        )
 
                 # Check if StreetName has a value, ask for City
                 if street_name_slot and 'value' in street_name_slot:
@@ -417,9 +609,53 @@ class PamphletHandler:
                         intent=intent_object,
                     )
 
-                # If we get here, start with street name
+                # Check if we're in address flow and last slot was StreetName
+                # This captures cases where Lex doesn't recognize the input as a valid slot value
+                if (
+                    flow_phase == 'address'
+                    and session_attributes.get('lastSlot') == 'StreetName'
+                    and 'inputTranscript' in event
+                ):
+                    # Manually capture the user's input as the street name
+                    user_input = event.get('inputTranscript', '')
+                    logger.debug(
+                        'Manually capturing street name from input: %s', user_input
+                    )
+
+                    if user_input and user_input.strip():
+                        # Set the street name slot value manually
+                        if 'slots' not in intent_object:
+                            intent_object['slots'] = {}
+
+                        intent_object['slots']['StreetName'] = {
+                            'value': {
+                                'originalValue': user_input,
+                                'interpretedValue': user_input,
+                                'resolvedValues': [user_input],
+                            },
+                            'shape': 'Scalar',
+                        }
+
+                        # Move to City
+                        message = 'Thanks. What is your city?'
+                        logger.debug('Message: %s', message)
+                        session_attributes.update(
+                            {
+                                'flowPhase': 'address',
+                                'lastMessage': message,
+                                'lastSlot': 'City',
+                            }
+                        )
+                        return self.elicit_slot_response(
+                            slot_name='City',
+                            message=message,
+                            session_attributes=session_attributes,
+                            intent=intent_object,
+                        )
+
+                # Fallback: If we get here, start with street name
                 message = (
-                    "Thanks. Now let's get your address. What is your street name?"
+                    "Thanks. Now let's get your address. What is your street name? (3)"
                 )
                 logger.debug('Message: %s', message)
                 session_attributes.update(
@@ -662,10 +898,7 @@ class PamphletHandler:
                         intent=intent_object,
                     )
                 else:
-                    intent_object['name'] = 'StreetName'  # Here
-                    message = (
-                        "Thanks. Now let's get your address. What is your street name?"
-                    )
+                    message = "Thanks. Now let's get your address. What is your street name? (4)"
                     logger.debug('Message: %s', message)
                     session_attributes.update(
                         {
