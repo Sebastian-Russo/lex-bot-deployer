@@ -9,7 +9,11 @@
 
 **Create test data**
 
-- [] Use testbot in console to create “test cases” dialog, create csv
+- [x] headers
+  - test_case,step,utterance,session_attributes,expected_reponse,expected_intent,expected_state,bot_id,alias_id,locale_id,notes
+  - main_route_1,2,blank,,"blank",LocateOffice,InProgress,S7IGLOYNUF,IXB6AXISGB,en_US,
+    - test alias: TSTALIASID, live alias: IXB6AXISGB
+- [x] Use testbot in console to create “test cases” dialog, create csv
 - [] Upload csv to S3 bucket /input
 
 **Set up test locally**
@@ -26,6 +30,8 @@
 - [] Medicare Enrollment bot
 
 # Currently Building:
+
+- [] Pamphlet bot
 
 **Add Utility Intents**
 

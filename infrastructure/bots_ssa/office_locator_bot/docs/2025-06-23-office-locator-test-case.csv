@@ -1,3 +1,6 @@
 test_case,step,utterance,session_attributes,expected_reponse,expected_intent,expected_state,bot_id,alias_id,locale_id,notes
-1,1,12345,{"zipCode":"12345"},"12345",officeLocator,slot,12345,12345,12345,
-1,2,yes,{"zipCode":"12345"},"12345",officeLocator,slot,12345,12345,12345,
+main_route_1,1,office,,"Go ahead and say or enter the five digit zip code for your area or the area where you want to find an office.",LocateOffice,InProgress,S7IGLOYNUF,IXB6AXISGB,en_US,this one uses live bot alias
+main_route_1,2,12345,,"That zip code is 12345. Right?",LocateOffice,InProgress,S7IGLOYNUF,IXB6AXISGB,en_US,
+main_route_1,2,yes,,"Thanks. Do you need to get a Social Security card?",LocateOffice,InProgress,S7IGLOYNUF,IXB6AXISGB,en_US,
+main_route_1,2,no,,"Okay, here's information for the servicing office in the zip code 12345. The address is 123 Main St. The hours of operation are 9am - 5pm. And the phone number is 867-5309.To hear that again, say repeat that. Otherwise, to search in a different zip code, say change zip code. Or if you're finished, just say, I'm finished.",LocateOffice,Fulfilled,S7IGLOYNUF,IXB6AXISGB,en_US,
+main_route_1,2,Finished,,"Ok, finished. Have a nice day.",LocateOffice,Fulfilled,S7IGLOYNUF,IXB6AXISGB,en_US,
