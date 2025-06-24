@@ -64,7 +64,9 @@ class LexStack(Stack):
 
         # Create Audio Bucket
         audio_bucket = s3.Bucket(
-            self, 'AudioBucket', removal_policy=RemovalPolicy.DESTROY
+            self,
+            'AudioBucket',
+            removal_policy=RemovalPolicy.DESTROY,
         )
         audio_bucket.grant_write(role)
 
