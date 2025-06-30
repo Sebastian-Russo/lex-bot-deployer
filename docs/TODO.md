@@ -37,11 +37,6 @@
 
 - [x] Skip
 - [x] Agent
-- [] Works on yes, repeats on no
-- [] Main menu
-
----
-
-**Further down the road:**
-
+- [x] Repeat
+- [x] Main menu
 - [] Add Spanish

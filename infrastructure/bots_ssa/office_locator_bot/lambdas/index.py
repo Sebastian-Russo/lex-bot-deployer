@@ -280,6 +280,8 @@ class OfficeLocatorHandler:
                 """
 
                 def normalize_string(s: str) -> str:
+                    if s is None:
+                        return ''
                     return ' '.join(s.strip().lower().split())
 
                 return normalize_string(str1) == normalize_string(str2)

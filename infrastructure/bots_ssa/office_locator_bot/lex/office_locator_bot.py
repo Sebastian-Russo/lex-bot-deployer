@@ -36,6 +36,29 @@ class OfficeLocatorBot(Construct):
 
         bot_name = f'{prefix}-office-locator'
 
+        lambda_role = iam.Role(
+            self,
+            'LambdaRole',
+            assumed_by=iam.ServicePrincipal('lambda.amazonaws.com'),
+            managed_policies=[
+                iam.ManagedPolicy.from_aws_managed_policy_name(
+                    'service-role/AWSLambdaBasicExecutionRole'
+                ),
+            ],
+        )
+
+        # Lex Permissions (for testing)
+        lambda_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=[
+                    'lex:RecognizeText',
+                    'lex:PostContent',
+                    'lex:PostText',
+                ],
+                resources=['*'],
+            )
+        )
+
         # Create Lambda function for handling dialog and fulfillment
         self.lambda_handler = create_lambda(
             self,

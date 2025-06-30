@@ -47,6 +47,7 @@ class PamphletHandler:
         session_attributes = self.get_session_attributes(event)
         # selection, address, confirmation
         flow_phase = session_attributes.get('flowPhase', 'selection')
+        last_message = session_attributes.get('lastMessage', '')
         logger.debug('Dialog hook')
         logger.debug('Intent: %s', json.dumps(intent_name))
         logger.debug('Slots: %s', json.dumps(slots))
@@ -328,7 +329,7 @@ class PamphletHandler:
                         state_value,
                         zip_code_value,
                     )
-                    
+
                     # Format the address
                     full_address = f'{street_name_value}, {city_value}, {state_value}, {zip_code_value}'
                     logger.debug('Formatted address: %s', full_address)
@@ -416,7 +417,9 @@ class PamphletHandler:
 
                         # Now that we have all address components, format the address and move to confirmation
                         full_address = f'{street_name_value}, {city_value}, {state_value}, {zip_code_value}'
-                        logger.debug('Formatted address from manual input: %s', full_address)
+                        logger.debug(
+                            'Formatted address from manual input: %s', full_address
+                        )
 
                         # Update session attributes with full address and change flow phase
                         message = f'Is this your address: {full_address}?'
@@ -831,7 +834,7 @@ class PamphletHandler:
                 return self.close_response(
                     session_attributes=session_attributes,
                     intent_name=intent_name,
-                    message='Sorry, you can only skip pamphlets while selecting them.',
+                    message=f'Sorry, you can only skip pamphlets while selecting them. {last_message}',
                 )
             # Grab sesion attributes
             current_index = int(session_attributes.get('currentPamphletIndex', 1))
@@ -939,7 +942,7 @@ class PamphletHandler:
                 )
                 message = f'Sure, let me repeat that: {last_message}'
                 logger.debug('Message: %s', message)
-                
+
                 # Preserve the current flow phase instead of always setting to 'selection'
                 current_flow_phase = session_attributes.get('flowPhase', 'selection')
                 session_attributes.update(
@@ -978,6 +981,70 @@ class PamphletHandler:
                     intent=intent_object,
                 )
 
+        elif intent_name == 'ReturnToMenu':
+            logger.debug('ReturnToMenu Intent')
+            session_attributes = self.get_session_attributes(event)
+            last_message = session_attributes.get('lastMessage', '')
+            last_slot = session_attributes.get('lastSlot', '')
+            logger.debug('Last message: %s', last_message)
+            logger.debug('Last slot: %s', last_slot)
+
+            confirmation_slot = slots.get('ConfirmationMainMenu')
+            confirmation_value = ''
+            logger.debug('ConfirmationMainMenu slot: %s', confirmation_slot)
+
+            # Check slot confirmation
+            if confirmation_slot and 'value' in confirmation_slot:
+                confirmation_value = (
+                    confirmation_slot['value'].get('interpretedValue', '').lower()
+                )
+                logger.debug('ConfirmationMainMenu slot: %s', confirmation_value)
+
+            # If None or empty, confirm return to menu
+            if confirmation_value is None or confirmation_value == '':
+                logger.debug('ConfirmationMainMenu is empty')
+                message = 'Are you sure you want to return to the main menu?'
+                return self.elicit_slot_response(
+                    slot_name='ConfirmationMainMenu',
+                    message=message,
+                    session_attributes=session_attributes,
+                    intent=intent_object,
+                )
+            # If No, return to last slot and intent
+            elif confirmation_value.lower() == 'no':
+                # Return to last slot and intent
+                logger.debug('ConfirmationMainMenu is No')
+                current_flow_phase = session_attributes.get('flowPhase', 'selection')
+
+                # Create a new intent object for ProcessPamphletRequest
+                process_intent = {'name': 'ProcessPamphletRequest', 'slots': {}}
+
+                # Update session attributes
+                session_attributes.update(
+                    {
+                        'flowPhase': current_flow_phase,
+                        'lastMessage': last_message,
+                        'lastSlot': last_slot,
+                    }
+                )
+
+                # Return to the previous slot in the ProcessPamphletRequest intent
+                return self.elicit_slot_response(
+                    slot_name=last_slot,
+                    message=last_message,
+                    session_attributes=session_attributes,
+                    intent=process_intent,  # Use the new intent object
+                )
+            # If Yes, clear session and close
+            elif confirmation_value.lower() == 'yes':
+                logger.debug('ConfirmationMainMenu is Yes')
+                session_attributes.clear()
+                return self.close_response(
+                    session_attributes=session_attributes,
+                    intent_name=intent_name,
+                    message='Returning to the main menu.',
+                )
+
         return self.fulfillment_hook(event)
 
     def fulfillment_hook(self, event):
@@ -993,12 +1060,14 @@ class PamphletHandler:
             json.dumps(slots),
             json.dumps(session_attributes),
         )
-        
+
         # Check if we're in the address flow phase and we should redirect back to dialog_hook
         # This prevents premature fulfillment when we're still collecting address information
         flow_phase = session_attributes.get('flowPhase', '')
         if flow_phase == 'address' and not session_attributes.get('fullAddress'):
-            logger.debug('In address flow phase but address collection not complete, redirecting to dialog_hook')
+            logger.debug(
+                'In address flow phase but address collection not complete, redirecting to dialog_hook'
+            )
             return self.dialog_hook(event)
 
         if intent_name == 'ProcessPamphletRequest':
@@ -1096,10 +1165,6 @@ class PamphletHandler:
     def get_slots(self, event):
         """Extract slots from event"""
         return event.get('sessionState', {}).get('intent', {}).get('slots', {})
-
-    def get_slot_value(self, slots, slot_name):
-        """Extract slot value from event"""
-        return slots.get(slot_name, '')
 
     def get_session_attributes(self, event):
         """Extract session attributes from event"""
