@@ -7,8 +7,11 @@ logger = logging.getLogger()
 logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
 
 
-def handler(event, context=None):
-    """Handles medicare enrollment conversation flow"""
+class MedicareEnrollmentHandler:
+    """Handle medicare enrollment conversation flow"""
+
+    def __init__(self):
+        pass
 
     def handler(self, event: Dict[str, Any], context=None):
         """Route to dialog_hook() or fulfillment_hook()"""
@@ -24,15 +27,15 @@ def handler(event, context=None):
 
     def dialog_hook(self, event: Dict[str, Any]):
         """Handle dialog hook"""
-        print('Dialog hook - Event: %s', json.dumps(event, indent=2))
+        logger.debug('Dialog hook - Event: %s', json.dumps(event, indent=2))
 
         intent_object = event['sessionState']['intent']
-        intent_name = self.get_intent_name(event)
+        intent_name = self.get_intent(event)['name']
         slots = self.get_slots(event)
         session_attributes = self.get_session_attributes(event)
 
         if intent_name == 'MedicareEnrollment':
-            print('Dialog hook - Intent: MedicareEnrollment')
+            logger.debug('Dialog hook - Intent: MedicareEnrollment')
 
             # check flowPhase
             # check confirmation slot
@@ -76,13 +79,70 @@ def handler(event, context=None):
 
     def fulfillment_hook(self, event: Dict[str, Any]):
         """Handle fulfillment hook"""
-        print('Fulfillment hook - Event: %s', json.dumps(event, indent=2))
+        logger.debug('Fulfillment hook - Event: %s', json.dumps(event, indent=2))
 
         intent_object = event['sessionState']['intent']
-        intent_name = self.get_intent_name(event)
+        intent_name = self.get_intent(event)['name']
         slots = self.get_slots(event)
         session_attributes = self.get_session_attributes(event)
 
         return
 
-    return
+    ### Helper functions to extract data from Lex events ###
+
+    def get_intent(self, event):
+        """Extract intent from event"""
+        return event.get('sessionState', {}).get('intent', {})
+
+    def get_slots(self, event):
+        """Extract slots from event"""
+        return event.get('sessionState', {}).get('intent', {}).get('slots', {})
+
+    def get_session_attributes(self, event):
+        """Extract session attributes from event"""
+        return event.get('sessionState', {}).get('sessionAttributes', {})
+
+    ### Helper functions to build Lex responses ###
+
+    def elicit_slot_response(self, slot_name, message, session_attributes, intent):
+        """Build "ask for slot" response"""
+        return {
+            'sessionState': {
+                'dialogAction': {'type': 'ElicitSlot', 'slotToElicit': slot_name},
+                'intent': intent,
+                'sessionAttributes': session_attributes,
+            },
+            'messages': [{'contentType': 'PlainText', 'content': message}],
+        }
+
+    def delegate_response(self, session_attributes, intent_object):
+        """Build "let Lex continue" response"""
+        return {
+            'sessionState': {
+                'dialogAction': {'type': 'Delegate'},
+                'intent': intent_object,
+                'sessionAttributes': session_attributes,
+            },
+        }
+
+    def close_response(self, session_attributes, intent_name, message):
+        """Build "conversation finished" response"""
+        return {
+            'sessionState': {
+                'dialogAction': {'type': 'Close'},
+                'intent': {
+                    'name': intent_name,
+                    'state': 'Fulfilled',  # or 'Failed'
+                },
+                'sessionAttributes': session_attributes,
+            },
+            'messages': [{'contentType': 'PlainText', 'content': message}],
+        }
+
+
+handler_instance = MedicareEnrollmentHandler()
+
+
+def handler(event, context=None):
+    """Lambda handler function"""
+    return handler_instance.handler(event, context)
