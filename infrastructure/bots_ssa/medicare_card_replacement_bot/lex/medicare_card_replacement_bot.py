@@ -1,8 +1,6 @@
-import logging
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
-from aws_cdk import aws_iam as iam
 from constructs import Construct
 
 from ....constructs.simple_bot import (
@@ -98,13 +96,13 @@ class MedicareCardReplacementBot(Construct):
         *,
         prefix: str,
         connect_instance_arn: str,
-        city_hall_queue_arn: str,
-        description: Optional[str] = None,
-        role: Optional[iam.IRole] = None,
-        idle_session_ttl_in_seconds: Optional[int] = 300,
-        nlu_confidence_threshold: Optional[float] = 0.75,
-        log_group=None,
-        audio_bucket=None,
+        # city_hall_queue_arn: str,
+        # description: Optional[str] = None,
+        # role: Optional[iam.IRole] = None,
+        # idle_session_ttl_in_seconds: Optional[int] = 300,
+        # nlu_confidence_threshold: Optional[float] = 0.75,
+        # log_group=None,
+        # audio_bucket=None,
         **kwargs,
     ):
         super().__init__(scope, id, **kwargs)
