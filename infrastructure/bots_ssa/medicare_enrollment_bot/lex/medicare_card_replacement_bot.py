@@ -14,6 +14,8 @@ from ....utils.create_lambda import create_lambda
 
 
 class MedicareEnrollmentBot(Construct):
+    """Medicare Enrollment Bot"""
+
     def __init__(
         self,
         scope: Construct,
