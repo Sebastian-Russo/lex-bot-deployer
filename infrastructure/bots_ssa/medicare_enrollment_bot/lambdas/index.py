@@ -38,6 +38,7 @@ class MedicareEnrollmentHandler:
             logger.debug('Dialog hook - Intent: MedicareEnrollment')
 
             # check flowPhase
+            # check session attributes (confirmations)
             # check confirmation slot
             # update session attributes based on slot value
             # clear the confirmation slot
@@ -49,19 +50,73 @@ class MedicareEnrollmentHandler:
             if flow_phase == 'main_flow':
                 confirmation = slots.get('Confirmation', None)
                 confirmation_value = ''
+                # Check session attributes (confirmations)
+
+                # Check confirmation slot
+
+                confirmation = session_attributes.get('Confirmation', None)
+
+                confirmation_value = ''
+
+                # TODO: check session attribtues and create logic
+                # check step session attribute
+                # check confirmation slot
+                # update session attributes based on slot value
+                # clear the confirmation slot
+                # return elicitSlotResponse
+
+                # Confirmation session_attribute values:
+                # 1
+                session_attributes = {
+                    'flowPhase': 'main_flow' or 'block_a',
+                    'step': {'step_1': {'enrollmentStatus': 'true' or 'false'}},
+                }
+                # 2
+                session_attributes = {
+                    'flowPhase': 'main_flow' or 'end_flow',
+                    'step': {'step_2': {'needReplacementCard': 'true' or 'false'}},
+                }
+                # 3
+                session_attributes = {
+                    'flowPhase': 'main_flow' or 'end_flow',
+                    'step': {'step_3': {'wantMedicationCostHelp': 'true' or 'false'}},
+                }
+                # 4
+                session_attributes = {
+                    'flowPhase': 'main_flow' or 'block_b',
+                    'step': {
+                        'step_4': {
+                            'alreadyEnrolledInMedicationCostHelp_PartD': 'true'
+                            or 'false'
+                        }
+                    },
+                }
+                # 5
+                session_attributes = {
+                    'flowPhase': 'main_flow' or 'repeat_p1375_p1376',
+                    'step': {
+                        'step_5': {'wantMedicationCostHelp_repeat': 'true' or 'false'}
+                    },
+                }
+                # 6
+                session_attributes = {
+                    'flowPhase': 'end_flow',  # (transfer to ? Medicare Perscript Drug Extra help? bot or agent?)
+                    'step': {'step_6': {'wantToReceiveApplication': 'true' or 'false'}},
+                }
+
                 # Check confirmation slot
                 if confirmation and 'value' in confirmation:
                     confirmation_value = (
                         confirmation['value'].get('interpretedValue', '').lower()
                     )
-                # Update session attributes based on slot value
+                # Update session attribute flowPhase, based on slot value (yes/no)
                 message = ''
-                # If yes
+                # If yes, transfer to block_a
                 if confirmation_value == 'yes':
                     session_attributes['flowPhase'] = 'block_a'
                     message = 'P1370English'
 
-                # If no
+                # If no, transfer to main_flow
                 elif confirmation_value == 'no':
                     session_attributes['flowPhase'] = 'main_flow'
                     message = 'P1378English + P1379English'
@@ -74,6 +129,82 @@ class MedicareEnrollmentHandler:
                     session_attributes=session_attributes,
                     intent=intent_object,
                 )
+
+            if flow_phase == 'block_a':
+                confirmation = slots.get('Confirmation', None)
+                confirmation_value = ''
+                # Check confirmation slot
+                if confirmation and 'value' in confirmation:
+                    confirmation_value = (
+                        confirmation['value'].get('interpretedValue', '').lower()
+                    )
+                # Update session attribute flowPhase, based on slot value (yes/no)
+                message = ''
+                # If yes, repeat P1378 + P1379
+                if confirmation_value == 'yes':
+                    message = 'P1378 + P1379'
+                    # Clear the confirmation slot
+                    slots['Confirmation'] = None
+                    return self.elicit_slot_response(
+                        slot_name='Confirmation',
+                        message=message,
+                        session_attributes=session_attributes,
+                        intent=intent_object,
+                    )
+
+                # If no, transfer to main menu, end_flow
+                elif confirmation_value == 'no':
+                    session_attributes['flowPhase'] = 'end_flow'
+                    message = 'P1382English'
+                    # Clear the confirmation slot
+                    slots['Confirmation'] = None
+                    # Return elicitSlotResponse
+                    return self.elicit_slot_response(
+                        slot_name='Confirmation',
+                        message=message,
+                        session_attributes=session_attributes,
+                        intent=intent_object,
+                    )
+
+            # TODO: only difference is a different message (rethink this logic)
+            if flow_phase == 'block_b':
+                confirmation = slots.get('Confirmation', None)
+                confirmation_value = ''
+                # Check confirmation slot
+                if confirmation and 'value' in confirmation:
+                    confirmation_value = (
+                        confirmation['value'].get('interpretedValue', '').lower()
+                    )
+                # Update session attribute flowPhase, based on slot value (yes/no)
+                message = ''
+                # If yes, repeat P1380 + P1381
+                if confirmation_value == 'yes':
+                    message = 'P1380 + P1381'
+                    # Clear the confirmation slot
+                    slots['Confirmation'] = None
+                    return self.elicit_slot_response(
+                        slot_name='Confirmation',
+                        message=message,
+                        session_attributes=session_attributes,
+                        intent=intent_object,
+                    )
+
+                # If no, transfer to main menu, end_flow
+                elif confirmation_value == 'no':
+                    session_attributes['flowPhase'] = 'end_flow'
+                    message = 'P1382English'
+                    # Clear the confirmation slot
+                    slots['Confirmation'] = None
+                    # Return elicitSlotResponse
+                    return self.elicit_slot_response(
+                        slot_name='Confirmation',
+                        message=message,
+                        session_attributes=session_attributes,
+                        intent=intent_object,
+                    )
+
+            if flow_phase == 'end_flow':
+                return
 
         return
 

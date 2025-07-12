@@ -23,20 +23,11 @@
 - [x] SSA Menu bot
 - [x] Office Locator bot
 - [x] Medicare Card Replacement bot
-- [] Pamphlet bot
+- [x] Pamphlet bot
 - [] Change of Address bot
 - [] Benefit Payment bot
 - [] Reprint 1099 bot
-- [] Medicare Enrollment bot
 
 # Currently Building:
 
-- [] Pamphlet bot
-
-**Add Utility Intents**
-
-- [x] Skip
-- [x] Agent
-- [x] Repeat
-- [x] Main menu
-- [] Add Spanish
+- [] Medicare Enrollment bot

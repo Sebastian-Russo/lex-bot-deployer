@@ -14,14 +14,14 @@ P1370a: Probemos otra vez. Medicare. Esta usted inscrito en Medicare?
 P1370aEnglish: Let's try again. Medicare. Are you enrolled in Medicare?
 
 No > Block A (secondary path) see later
-Yes > continue, P1372 (main path)
+Yes > continue, P1372 (main_flow)
 
 ```
-Slots: Confirmation (Yes/No)
+Slots: Confirmation 1(Yes/No)
 Session Attributes:
 
 - flowPhase: main_flow/block_a
-- enrollmentStatus: enrolled/not enrolled
+- enrollmentStatus: enrolled/not_enrolled
 ```
 
 P1372: Quiere una nueva tarjeta de medicare?
@@ -34,7 +34,7 @@ Yes > Transfer to Medicare Replacement Card bot
 No > continue, P1373
 
 ```
-Slots: Confirmation (Yes/No)
+Slots: Confirmation 2(Yes/No)
 Session Attributes:
 
 - flowPhase: main_flow/end_flow (cuz transfer)
@@ -51,7 +51,7 @@ No > P1382 (return to main menu)
 Yes > P1374 (main path)
 
 ```
-Slots: Confirmation (Yes/No)
+Slots: Confirmation 3(Yes/No)
 Session Attributes:
 
 - flowPhase: main_flow/end_flow
@@ -68,7 +68,7 @@ No > Block B (secondary path) see later below
 Yes > continue, P1375 + P1376
 
 ```
-Slots: Confirmation (Yes/No)
+Slots: Confirmation 4(Yes/No)
 Session Attributes:
 
 - flowPhase: main_flow/block_b
@@ -90,10 +90,11 @@ Yes > repeat P1375 + P1376
 No > P1377 (main path)
 
 ```
-Slots: Confirmation (Yes/No)
+Slots: Confirmation 5?(Yes/No)
 Session Attributes:
 
-- flowPhase: main_flow
+- flowPhase: main_flow/repeat_p1375_p1376
+- wantMedicationCostHelp_repeat: true/false
 ```
 
 P1377: Desea usted recibir una applicacion para ayuda para cubrir sus gastos por medicamentos?
@@ -106,10 +107,10 @@ Yes > _Medicare Perscription Drug Extra Help_ (TODO: is this bot or link? Find o
 No > P1382 (return to main menu)
 
 ```
-Slots: Confirmation (Yes/No)
+Slots: Confirmation 6 (Yes/No)
 Session Attributes:
 
-- flowPhase: main_flow/end_flow
+- flowPhase: end_flow
 - wantToReceiveApplication: true/false
 ```
 
@@ -135,6 +136,7 @@ P1381English: Do you want to hear the information again?
 
 P1381a: Probemos otra vez. Desea escuchar de nuevo la informacion para inscribirse en el programa regular de Medicare de ayuda para cubrir gastos por medicamentos?
 P1381aEnglish: Let's try again. Do you want to hear the information about enrolling in the regular Medicare program for help covering medication expenses?
+P1381aEnglish: Let's try again. Do you want to hear the information about enrolling in the regular Medicare program for help covering medication expenses?
 
 Yes > repeat P1380 + P1381
 No > P1382 (return to main menu)
@@ -159,7 +161,7 @@ P1379: Quiere volver a escuchar la informacion otra vez?
 P1379English: Do you want to hear the information again?
 
 P1379a: Probemos otra vez. Desea escuchar la informacion para applicar a la parte D de Medicare nuevamente?
-P1379aEnglish: Let's try again. Do you want to hear the information about applying for Part D of Medicare again?
+P1379aEnglish: Let's try again. Do you want to hear the information about applying fofr Part D of Medicare again?
 
 Yes > repeat P1378 + P1379
 No > P1382 (return to main menu)
