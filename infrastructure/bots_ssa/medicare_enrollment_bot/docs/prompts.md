@@ -124,7 +124,7 @@ Session Attributes:
 - flowPhase: end_flow
 ```
 
-Block B
+Block B (inform_must_be_enrolled_in_part_a_or_b)
 
 P1380: Para inscribirse en el programa regular de Medicare de ayuda para cubrir gastos por medicamentos, llamado parte D, debe estar inscrito, o ser elegible a la Parte A de Medicare, de cobertura hospitalaria, o la Parte B, que ofrece servicios medicos, cobertura de vista medica y otros servicios no cubiertos por la Parte A. Una vez este inscrito en la Parte A, o la Parte B, puede inscribirse USTED MISMO en el programa de ayuda para cubrir gastos por medicamentos, llamado parte D, a treaves de un proveedor autorizado del programa para ayuda para cubrir gastos por medicamentos de Medicare, o a traves de un plan para cubrir gastos por medicamentos de Medicare que ofrece cobertura para cubrir gastos por medicamentos. Para obtener mas informacion, llame al 1-800-633-4227. Repitiendo el numero es, 1-800-633-4227, o visite el sitio web, Medicare punto G O V.
 P1380English: To enroll in the regular Medicare program for help covering medication expenses, called Part D, you must be enrolled, or eligible for Part A of Medicare, hospital coverage, or Part B, which offers medical services, medical vision coverage, and other services not covered by Part A. Once you are enrolled in Part A or Part B, you can enroll yourself in the program for help covering medication expenses, called Part D, through an authorized provider of the program for help covering medication expenses of Medicare, or through a Medicare coverage plan for medication expenses that offers coverage for medication expenses. To get more information, call 1-800-633-4227. Repeating the number is, 1-800-633-4227, or visit the website, Medicare dot G O V.
@@ -150,7 +150,7 @@ Session Attributes:
 
 ```
 
-Block A
+Block A (medication_expenses_info_number)
 
 P1378: Usted puede obtener mas informacion sobre la ayuda para cubrir sus gastos por medicaments (conocido como Parte D) o los programas de Medicare estatales que pueden ayudarlo con sus gastos de salud, llamando a 1-800-633-4227. Ese numer es, 1-800-633-4227. Este informacion tambien esta disponible en su sitio web, en www punto Medicare punto G O V.
 P1378English: You can get more information about the help covering your medication expenses (known as Part D) or the Medicare state programs that can help you with your health care expenses, by calling 1-800-633-4227. That number is, 1-800-633-4227. This information is also available on your website, at www dot Medicare dot G O V.
