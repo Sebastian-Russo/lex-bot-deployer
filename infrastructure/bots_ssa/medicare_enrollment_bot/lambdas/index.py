@@ -40,33 +40,297 @@ class MedicareEnrollmentHandler:
         if intent_name == 'MedicareEnrollment':
             logger.debug('Dialog hook - Intent: MedicareEnrollment')
 
-            # check flowPhase
-            # check session attributes (confirmations)
-            # check confirmation slot
-            # update session attributes based on slot value
-            # clear the confirmation slot
-            # return elicitSlotResponse
+            # session_attributes = {
+            #     'flowPhase': 'main_flow' or 'block_a' or 'block_b' or 'end_flow',
+            #     'step': {
+            #         'step_1': {'enrollmentStatus': True or False},
+            #         'step_2': {'needReplacementCard': True or False},
+            #         # ... other steps with their attributes
+            #     },
+            #     'retry_count': 0  # Incremented for invalid responses
+            # }
 
+            # Define the main flow steps
+            main_flow_steps = [
+                {
+                    'id': 'step_1',
+                    'attribute': 'enrollmentStatus',
+                    'prompt': 'P1370English',
+                    'retry_prompt': 'P1370aEnglish',
+                    'outcomes': {
+                        'yes': {'next': 'step_2', 'phase': 'main_flow'},
+                        'no': {'next': 'block_a', 'phase': 'block_a'},
+                    },
+                },
+                {
+                    'id': 'step_2',
+                    'attribute': 'needReplacementCard',
+                    'prompt': 'P1372English',
+                    'retry_prompt': 'P1372aEnglish',
+                    'outcomes': {
+                        'yes': {
+                            'next': 'transfer',  # Special case for transfer
+                            'phase': 'end_flow',
+                        },
+                        'no': {'next': 'step_3', 'phase': 'main_flow'},
+                    },
+                },
+                {
+                    'id': 'step_3',
+                    'attribute': 'wantMedicationCostHelp',
+                    'prompt': 'P1373English',
+                    'retry_prompt': 'P1373aEnglish',
+                    'outcomes': {
+                        'yes': {'next': 'step_4', 'phase': 'main_flow'},
+                        'no': {'next': 'end_flow', 'phase': 'end_flow'},
+                    },
+                },
+                {
+                    'id': 'step_4',
+                    'attribute': 'alreadyEnrolledInMedicationCostHelp_PartD',
+                    'prompt': 'P1374English',
+                    'retry_prompt': 'P1374aEnglish',
+                    'outcomes': {
+                        'yes': {'next': 'step_5', 'phase': 'main_flow'},
+                        'no': {'next': 'block_b', 'phase': 'block_b'},
+                    },
+                },
+                {
+                    'id': 'step_5',
+                    'attribute': 'wantMedicationCostHelp_repeat',
+                    'prompt': 'P1375English + P1376English',
+                    'retry_prompt': 'P1376aEnglish',
+                    'outcomes': {
+                        'yes': {
+                            'next': 'repeat_p1375_p1376',
+                            'phase': 'repeat_p1375_p1376',
+                        },
+                        'no': {'next': 'step_6', 'phase': 'main_flow'},
+                    },
+                },
+                {
+                    'id': 'step_6',
+                    'attribute': 'wantToReceiveApplication',
+                    'prompt': 'P1377English',
+                    'retry_prompt': 'P1377aEnglish',
+                    'outcomes': {
+                        'yes': {'next': 'transfer_extra_help', 'phase': 'end_flow'},
+                        'no': {'next': 'end_flow', 'phase': 'end_flow'},
+                    },
+                },
+            ]
+
+            # Get current flow phase
             flow_phase = session_attributes.get('flowPhase', 'main_flow')
 
-            # Main Flow
+            # Handle main flow
             if flow_phase == 'main_flow':
+                # Initialize session if needed
+                if 'step' not in session_attributes:
+                    session_attributes['step'] = {}
+                    session_attributes['retry_count'] = 0
+                    current_step = main_flow_steps[0]  # Start with first step
+
+                    # Return initial prompt
+                    return self.elicit_slot_response(
+                        slot_name='Confirmation',
+                        message=MessageMap.get_message(current_step['prompt']),
+                        session_attributes=session_attributes,
+                        intent=intent_object,
+                    )
+
+                # Determine current step in main flow
+                current_step_id = self._get_current_step_id(session_attributes)
+                # Get current step from main_flow_steps list
+                current_step = next(
+                    (s for s in main_flow_steps if s['id'] == current_step_id),
+                    main_flow_steps[0],
+                )
+
+                # Process confirmation slot
                 confirmation = slots.get('Confirmation', None)
-                confirmation_value = ''
-                # Check session attributes (confirmations)
+                confirmation_value = None
 
-                # Check confirmation slot
+                if confirmation and 'value' in confirmation:
+                    confirmation_value = (
+                        confirmation['value'].get('interpretedValue', '').lower()
+                    )
+                    logger.debug('Confirmation Value: %s', confirmation_value)
 
-                confirmation = session_attributes.get('Confirmation', None)
+                    # Process YES response
+                    if confirmation_value in [
+                        'yes',
+                        'yeah',
+                        'correct',
+                        'right',
+                        'sure',
+                        'ok',
+                        'okay',
+                    ]:
+                        # Store the attribute value
+                        if current_step['id'] not in session_attributes['step']:
+                            session_attributes['step'][current_step['id']] = {}
 
-                confirmation_value = ''
+                        session_attributes['step'][current_step['id']][
+                            current_step['attribute']
+                        ] = True
 
-                # TODO: check session attribtues and create logic
-                # check step session attribute
-                # check confirmation slot
-                # update session attributes based on slot value
-                # clear the confirmation slot
-                # return elicitSlotResponse
+                        # Get outcome for yes response
+                        outcome = current_step['outcomes']['yes']
+                        next_step_id = outcome['next']
+                        session_attributes['flowPhase'] = outcome['phase']
+
+                        # Handle special cases
+                        if next_step_id == 'transfer':
+                            # Handle transfer to Medicare Card Replacement
+                            return self.close_response(
+                                session_attributes=session_attributes,
+                                intent_name=intent_name,
+                                message=MessageMap.get_message(
+                                    'TRANSFER_MEDICARE_CARD'
+                                ),
+                            )
+
+                        if next_step_id == 'transfer_extra_help':
+                            # Handle transfer to Medicare Prescription Drug Extra Help
+                            return self.close_response(
+                                session_attributes=session_attributes,
+                                intent_name=intent_name,
+                                message=MessageMap.get_message('TRANSFER_EXTRA_HELP'),
+                            )
+
+                        if next_step_id == 'end_flow':
+                            # End of conversation
+                            return self.close_response(
+                                session_attributes=session_attributes,
+                                intent_name=intent_name,
+                                message=MessageMap.get_message('P1382English'),
+                            )
+
+                        # For now, we'll only handle main_flow steps
+                        # Other phases will be implemented later
+                        if outcome['phase'] != 'main_flow':
+                            # For now, just end the conversation
+                            return self.close_response(
+                                session_attributes=session_attributes,
+                                intent_name=intent_name,
+                                message=MessageMap.get_message('P1382English'),
+                            )
+
+                        # Find next step in main flow
+                        next_step = next(
+                            (s for s in main_flow_steps if s['id'] == next_step_id),
+                            None,
+                        )
+
+                        if next_step:
+                            # Reset retry count for new step
+                            session_attributes['retry_count'] = 0
+
+                            # Clear confirmation slot
+                            slots['Confirmation'] = None
+
+                            # Return prompt for next step
+                            return self.elicit_slot_response(
+                                slot_name='Confirmation',
+                                message=MessageMap.get_message(next_step['prompt']),
+                                session_attributes=session_attributes,
+                                intent=intent_object,
+                            )
+
+                    # Process NO response
+                    elif confirmation_value in [
+                        'no',
+                        'nope',
+                        'nah',
+                        'negative',
+                        'incorrect',
+                    ]:
+                        # Store the attribute value
+                        if current_step['id'] not in session_attributes['step']:
+                            session_attributes['step'][current_step['id']] = {}
+
+                        session_attributes['step'][current_step['id']][
+                            current_step['attribute']
+                        ] = False
+
+                        # Get outcome for no response
+                        outcome = current_step['outcomes']['no']
+                        next_step_id = outcome['next']
+                        session_attributes['flowPhase'] = outcome['phase']
+
+                        # Handle special case for end of flow
+                        if next_step_id == 'end_flow':
+                            return self.close_response(
+                                session_attributes=session_attributes,
+                                intent_name=intent_name,
+                                message=MessageMap.get_message('P1382English'),
+                            )
+
+                        # For now, we'll only handle main_flow steps
+                        # Other phases will be implemented later
+                        if outcome['phase'] != 'main_flow':
+                            # For now, just end the conversation
+                            return self.close_response(
+                                session_attributes=session_attributes,
+                                intent_name=intent_name,
+                                message=MessageMap.get_message('P1382English'),
+                            )
+
+                        # Find next step
+                        next_step = next(
+                            (s for s in main_flow_steps if s['id'] == next_step_id),
+                            None,
+                        )
+
+                        if next_step:
+                            # Reset retry count for new step
+                            session_attributes['retry_count'] = 0
+
+                            # Clear confirmation slot
+                            slots['Confirmation'] = None
+
+                            # Return prompt for next step
+                            return self.elicit_slot_response(
+                                slot_name='Confirmation',
+                                message=MessageMap.get_message(next_step['prompt']),
+                                session_attributes=session_attributes,
+                                intent=intent_object,
+                            )
+
+                    # Handle Retry
+                    else:
+                        # Invalid response, retry
+                        retry_count = session_attributes.get('retry_count', 0) + 1
+                        session_attributes['retry_count'] = retry_count
+
+                        # Use retry prompt if available and retry count is appropriate
+                        message_id = (
+                            current_step['retry_prompt']
+                            if retry_count <= 2
+                            else current_step['prompt']
+                        )
+
+                        # Clear confirmation slot
+                        slots['Confirmation'] = None
+
+                        return self.elicit_slot_response(
+                            slot_name='Confirmation',
+                            message=MessageMap.get_message(message_id),
+                            session_attributes=session_attributes,
+                            intent=intent_object,
+                        )
+
+                # No confirmation value, elicit slot
+                else:
+                    message_id = current_step['prompt']
+
+                    return self.elicit_slot_response(
+                        slot_name='Confirmation',
+                        message=MessageMap.get_message(message_id),
+                        session_attributes=session_attributes,
+                        intent=intent_object,
+                    )
 
                 # Confirmation session_attribute values:
                 # 1
@@ -222,7 +486,48 @@ class MedicareEnrollmentHandler:
 
         return
 
-    ### Helper functions to extract data from Lex events ###
+    # Helper functions state machine
+
+    def _get_current_step_id(self, session_attributes):
+        ### Helper functions ###
+
+        """Determine the current step ID based on session attributes
+
+        This helper method examines the session attributes to determine which step
+        the conversation is currently on in the main flow.
+
+        Args:
+            session_attributes: The session attributes dictionary
+
+        Returns:
+            str: The current step ID (e.g., 'step_1', 'step_2', etc.)
+        """
+        # If no steps have been processed yet, start with step_1
+        if 'step' not in session_attributes or not session_attributes['step']:
+            return 'step_1'
+
+        # Check each step in order
+        steps = ['step_1', 'step_2', 'step_3', 'step_4', 'step_5', 'step_6']
+
+        # Iterate through steps to find the current step
+        for i, step_id in enumerate(steps):
+            # If this step isn't in session attributes yet, this is the current step
+            if step_id not in session_attributes['step']:
+                return step_id
+
+            # If this is the last step, return it
+            if i == len(steps) - 1:
+                return step_id
+
+            # If the next step isn't in session attributes, this is the current step
+            next_step = steps[i + 1]
+            if next_step not in session_attributes['step']:
+                return next_step
+
+        # Default to step_1 if we can't determine the current step
+        return 'step_1'
+
+    # Helper functions Lex events
 
     def get_intent(self, event):
         """Extract intent from event"""
@@ -239,14 +544,52 @@ class MedicareEnrollmentHandler:
     ### Helper functions to build Lex responses ###
 
     def elicit_slot_response(self, slot_name, message, session_attributes, intent):
-        """Build "ask for slot" response"""
+        """Return elicit slot response"""
         return {
             'sessionState': {
-                'dialogAction': {'type': 'ElicitSlot', 'slotToElicit': slot_name},
+                'dialogAction': {
+                    'type': 'ElicitSlot',
+                    'slotToElicit': slot_name,
+                },
                 'intent': intent,
                 'sessionAttributes': session_attributes,
             },
-            'messages': [{'contentType': 'PlainText', 'content': message}],
+            'messages': [
+                {
+                    'contentType': 'PlainText',
+                    'content': message,
+                },
+            ],
+        }
+
+    def close_response(self, session_attributes, intent_name, message):
+        """Return close response for fulfillment or transfer
+
+        Args:
+            session_attributes: The session attributes dictionary
+            intent_name: The name of the intent
+            message: The message to display to the user
+
+        Returns:
+            dict: The response object for Lex
+        """
+        return {
+            'sessionState': {
+                'dialogAction': {
+                    'type': 'Close',
+                },
+                'intent': {
+                    'name': intent_name,
+                    'state': 'Fulfilled',
+                },
+                'sessionAttributes': session_attributes,
+            },
+            'messages': [
+                {
+                    'contentType': 'PlainText',
+                    'content': message,
+                },
+            ],
         }
 
     def delegate_response(self, session_attributes, intent_object):
@@ -257,20 +600,6 @@ class MedicareEnrollmentHandler:
                 'intent': intent_object,
                 'sessionAttributes': session_attributes,
             },
-        }
-
-    def close_response(self, session_attributes, intent_name, message):
-        """Build "conversation finished" response"""
-        return {
-            'sessionState': {
-                'dialogAction': {'type': 'Close'},
-                'intent': {
-                    'name': intent_name,
-                    'state': 'Fulfilled',  # or 'Failed'
-                },
-                'sessionAttributes': session_attributes,
-            },
-            'messages': [{'contentType': 'PlainText', 'content': message}],
         }
 
 
