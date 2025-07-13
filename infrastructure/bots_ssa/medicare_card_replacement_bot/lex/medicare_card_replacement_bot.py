@@ -3,6 +3,7 @@ from typing import Any, Dict, List
 
 from constructs import Construct
 
+# pylint: disable=import-error
 from ....constructs.simple_bot import (
     CodeHook,
     SimpleBot,
@@ -11,6 +12,8 @@ from ....constructs.simple_bot import (
     SimpleLocale,
     SimpleSlot,
 )
+
+# pylint: disable=import-error
 from ....utils.create_lambda import create_lambda
 
 
@@ -89,6 +92,8 @@ class LexHelper:
 
 
 class MedicareCardReplacementBot(Construct):
+    """Handle Medicare card replacement conversation flow using a unified state machine approach"""
+
     def __init__(
         self,
         scope: Construct,
