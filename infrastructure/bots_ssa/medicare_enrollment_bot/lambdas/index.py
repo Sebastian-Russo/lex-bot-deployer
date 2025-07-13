@@ -12,7 +12,21 @@ logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
 
 
 class MedicareEnrollmentHandler:
-    """Handle medicare enrollment conversation flow using a unified state machine approach"""
+    """Handle Medicare enrollment conversation flow using a unified state machine approach
+
+    This handler implements a unified state machine for managing Medicare enrollment conversations.
+    Key features include:
+
+    - Single state tracking via 'current_step' session attribute
+    - Consolidated conversation steps in one array
+    - Explicit terminal steps with is_terminal flag
+    - Support for combined prompts
+    - Comprehensive metrics tracking
+    - Helper methods for step transitions, prompt processing, and terminal steps
+
+    The state machine drives the conversation through a series of steps, each with
+    defined prompts, retry prompts, and outcome paths based on user responses.
+    """
 
     def __init__(self):
         pass
@@ -211,22 +225,8 @@ class MedicareEnrollmentHandler:
 
             # Handle terminal steps (steps that end the conversation)
             if current_step.get('is_terminal', False):
-                logger.debug('Handling terminal step: %s', current_step_id)
-
-                # Store the attribute value
-                if current_step['id'] not in session_attributes['step']:
-                    session_attributes['step'][current_step['id']] = {}
-
-                session_attributes['step'][current_step['id']][
-                    current_step['attribute']
-                ] = True
-
-                # For terminal steps, provide the message and close the conversation
-                message = MessageMap.get_message(current_step['prompt'])
-                return self.close_response(
-                    session_attributes=session_attributes,
-                    intent_name=intent_name,
-                    message=message,
+                return self._handle_terminal_step(
+                    session_attributes, current_step, intent_name
                 )
 
             # Process user's response for non-terminal steps
@@ -246,64 +246,15 @@ class MedicareEnrollmentHandler:
                     'ok',
                     'okay',
                 ]:
-                    # Store the attribute value
-                    if current_step['id'] not in session_attributes['step']:
-                        session_attributes['step'][current_step['id']] = {}
-
-                    session_attributes['step'][current_step['id']][
-                        current_step['attribute']
-                    ] = True
-
-                    # Get next step
-                    next_step_id = current_step['outcomes']['yes']['next']
-                    session_attributes['current_step'] = next_step_id
-
-                    # Reset retry count for new step
-                    session_attributes['retry_count'] = 0
-
-                    # Update metrics
-                    if 'metrics' in session_attributes:
-                        session_attributes['metrics']['steps_completed'] += 1
-
-                    # Get next step
-                    next_step = next(
-                        (s for s in conversation_steps if s['id'] == next_step_id),
-                        None,
+                    return self._handle_step_transition(
+                        session_attributes=session_attributes,
+                        current_step=current_step,
+                        outcome_type='yes',
+                        conversation_steps=conversation_steps,
+                        intent_name=intent_name,
+                        intent_object=intent_object,
+                        slots=slots,
                     )
-
-                    if next_step:
-                        logger.debug('Moving to next step: %s', next_step['id'])
-
-                        # If next step is terminal, handle it immediately
-                        if next_step.get('is_terminal', False):
-                            message = MessageMap.get_message(next_step['prompt'])
-                            return self.close_response(
-                                session_attributes=session_attributes,
-                                intent_name=intent_name,
-                                message=message,
-                            )
-
-                        # Otherwise, elicit slot for the next step
-                        message = MessageMap.get_message(next_step['prompt'])
-
-                        # Handle combined prompts (e.g., "P1375English + P1376English")
-                        if '+' in next_step['prompt']:
-                            prompt_parts = [
-                                p.strip() for p in next_step['prompt'].split('+')
-                            ]
-                            message = ' '.join(
-                                [MessageMap.get_message(p) for p in prompt_parts]
-                            )
-
-                        # Clear confirmation slot
-                        slots['Confirmation'] = None
-
-                        return self.elicit_slot_response(
-                            slot_name='Confirmation',
-                            message=message,
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
 
                 # Process NO response
                 elif confirmation_value in [
@@ -313,64 +264,15 @@ class MedicareEnrollmentHandler:
                     'negative',
                     'incorrect',
                 ]:
-                    # Store the attribute value
-                    if current_step['id'] not in session_attributes['step']:
-                        session_attributes['step'][current_step['id']] = {}
-
-                    session_attributes['step'][current_step['id']][
-                        current_step['attribute']
-                    ] = False
-
-                    # Get next step
-                    next_step_id = current_step['outcomes']['no']['next']
-                    session_attributes['current_step'] = next_step_id
-
-                    # Reset retry count for new step
-                    session_attributes['retry_count'] = 0
-
-                    # Update metrics
-                    if 'metrics' in session_attributes:
-                        session_attributes['metrics']['steps_completed'] += 1
-
-                    # Get next step
-                    next_step = next(
-                        (s for s in conversation_steps if s['id'] == next_step_id),
-                        None,
+                    return self._handle_step_transition(
+                        session_attributes=session_attributes,
+                        current_step=current_step,
+                        outcome_type='no',
+                        conversation_steps=conversation_steps,
+                        intent_name=intent_name,
+                        intent_object=intent_object,
+                        slots=slots,
                     )
-
-                    if next_step:
-                        logger.debug('Moving to next step: %s', next_step['id'])
-
-                        # If next step is terminal, handle it immediately
-                        if next_step.get('is_terminal', False):
-                            message = MessageMap.get_message(next_step['prompt'])
-                            return self.close_response(
-                                session_attributes=session_attributes,
-                                intent_name=intent_name,
-                                message=message,
-                            )
-
-                        # Otherwise, elicit slot for the next step
-                        message = MessageMap.get_message(next_step['prompt'])
-
-                        # Handle combined prompts (e.g., "P1375English + P1376English")
-                        if '+' in next_step['prompt']:
-                            prompt_parts = [
-                                p.strip() for p in next_step['prompt'].split('+')
-                            ]
-                            message = ' '.join(
-                                [MessageMap.get_message(p) for p in prompt_parts]
-                            )
-
-                        # Clear confirmation slot
-                        slots['Confirmation'] = None
-
-                        return self.elicit_slot_response(
-                            slot_name='Confirmation',
-                            message=message,
-                            session_attributes=session_attributes,
-                            intent=intent_object,
-                        )
 
                 # Handle invalid responses
                 else:
@@ -385,7 +287,9 @@ class MedicareEnrollmentHandler:
                     logger.debug('Invalid response, retry count: %s', retry_count)
 
                     # Use appropriate message based on retry count
-                    message = MessageMap.get_message(current_step['retry_prompt'])
+                    message = self._process_combined_prompt(
+                        current_step['retry_prompt']
+                    )
 
                     # Clear confirmation slot
                     slots['Confirmation'] = None
@@ -399,16 +303,7 @@ class MedicareEnrollmentHandler:
 
             # No confirmation value, elicit slot
             else:
-                message = MessageMap.get_message(current_step['prompt'])
-
-                # Handle combined prompts (e.g., "P1375English + P1376English")
-                if '+' in current_step['prompt']:
-                    prompt_parts = [
-                        p.strip() for p in current_step['prompt'].split('+')
-                    ]
-                    message = ' '.join(
-                        [MessageMap.get_message(p) for p in prompt_parts]
-                    )
+                message = self._process_combined_prompt(current_step['prompt'])
 
                 return self.elicit_slot_response(
                     slot_name='Confirmation',
@@ -453,29 +348,45 @@ class MedicareEnrollmentHandler:
         current_step_id = session_attributes.get('current_step', 'step_1')
         logger.debug('Fulfillment hook - Current step: %s', current_step_id)
 
-        # Check for special terminal steps
-        if current_step_id == 'step_transfer_card_replacement':
-            return self.close_response(
-                session_attributes=session_attributes,
-                intent_name=intent_name,
-                message=MessageMap.get_message('TRANSFER_CARD_REPLACEMENT'),
-            )
+        # Find the terminal step by ID
+        conversation_steps = [
+            # Define all conversation steps (same as in dialog_hook)
+            # This is a simplified version for fulfillment_hook
+            {
+                'id': 'step_transfer_card_replacement',
+                'attribute': 'transferredToCardReplacement',
+                'prompt': 'TRANSFER_CARD_REPLACEMENT',
+                'is_terminal': True,
+            },
+            {
+                'id': 'step_transfer_extra_help',
+                'attribute': 'transferredToExtraHelp',
+                'prompt': 'TRANSFER_EXTRA_HELP',
+                'is_terminal': True,
+            },
+            {
+                'id': 'step_end_flow',
+                'attribute': 'conversationEnded',
+                'prompt': 'P1382English',
+                'is_terminal': True,
+            },
+            {
+                'id': 'step_provide_medicare_info',
+                'attribute': 'providedMedicareInfo',
+                'prompt': 'P1379English',
+                'is_terminal': True,
+            },
+        ]
 
-        if current_step_id == 'step_transfer_extra_help':
-            return self.close_response(
-                session_attributes=session_attributes,
-                intent_name=intent_name,
-                message=MessageMap.get_message('TRANSFER_EXTRA_HELP'),
-            )
+        # Find the current step
+        current_step = next(
+            (s for s in conversation_steps if s['id'] == current_step_id),
+            None,
+        )
 
-        if (
-            current_step_id == 'step_end_flow'
-            or current_step_id == 'step_provide_medicare_info'
-        ):
-            return self.close_response(
-                session_attributes=session_attributes,
-                intent_name=intent_name,
-                message=MessageMap.get_message('P1382English'),
+        if current_step and current_step.get('is_terminal', False):
+            return self._handle_terminal_step(
+                session_attributes, current_step, intent_name
             )
 
         # Default: delegate to Lex
@@ -495,6 +406,168 @@ class MedicareEnrollmentHandler:
         """
         # In our unified approach, we directly store the current step
         return session_attributes.get('current_step', 'step_1')
+
+    def _handle_step_transition(
+        self,
+        session_attributes,
+        current_step,
+        outcome_type,
+        conversation_steps,
+        intent_name,
+        intent_object,
+        slots,
+    ):
+        """Handle transition to the next step in the conversation flow
+
+        This helper method manages the transition between conversation steps,
+        including updating session attributes, retrieving the next step,
+        and generating the appropriate response.
+
+        Args:
+            session_attributes: The session attributes dictionary
+            current_step: The current step dictionary
+            outcome_type: The type of outcome ('yes' or 'no')
+            conversation_steps: The list of all conversation steps
+            intent_name: The name of the intent
+            intent_object: The intent object
+            slots: The slots dictionary
+
+        Returns:
+            dict: The response object for Lex
+        """
+        # Store the attribute value
+        if current_step['id'] not in session_attributes['step']:
+            session_attributes['step'][current_step['id']] = {}
+
+        # Set attribute value based on outcome type
+        session_attributes['step'][current_step['id']][current_step['attribute']] = (
+            outcome_type == 'yes'
+        )
+
+        # Get next step
+        next_step_id = current_step['outcomes'][outcome_type]['next']
+        session_attributes['current_step'] = next_step_id
+
+        # Reset retry count for new step
+        session_attributes['retry_count'] = 0
+
+        # Update metrics
+        if 'metrics' in session_attributes:
+            session_attributes['metrics']['steps_completed'] += 1
+
+        # Get next step
+        next_step = next(
+            (s for s in conversation_steps if s['id'] == next_step_id),
+            None,
+        )
+
+        if next_step:
+            logger.debug('Moving to next step: %s', next_step['id'])
+
+            # If next step is terminal, handle it immediately
+            if next_step.get('is_terminal', False):
+                return self._handle_terminal_step(
+                    session_attributes, next_step, intent_name
+                )
+
+            # Otherwise, elicit slot for the next step
+            message = self._process_combined_prompt(next_step['prompt'])
+
+            # Clear confirmation slot
+            slots['Confirmation'] = None
+
+            return self.elicit_slot_response(
+                slot_name='Confirmation',
+                message=message,
+                session_attributes=session_attributes,
+                intent=intent_object,
+            )
+
+        # Default return if next step not found
+        return self.delegate_response(session_attributes, intent_object)
+
+    def _process_combined_prompt(self, prompt_key):
+        """Process potentially combined prompts
+
+        This helper method handles combined prompts (e.g., "P1375English + P1376English")
+        by splitting them and joining the retrieved messages.
+
+        Args:
+            prompt_key: The prompt key or combined prompt keys
+
+        Returns:
+            str: The processed message
+        """
+        if '+' in prompt_key:
+            prompt_parts = [p.strip() for p in prompt_key.split('+')]
+            return ' '.join([MessageMap.get_message(p) for p in prompt_parts])
+
+        return MessageMap.get_message(prompt_key)
+
+    def _handle_terminal_step(self, session_attributes, step, intent_name):
+        """Handle terminal steps that end the conversation
+
+        This helper method processes terminal steps, updates session attributes,
+        and returns the appropriate close response.
+
+        Args:
+            session_attributes: The session attributes dictionary
+            step: The terminal step dictionary
+            intent_name: The name of the intent
+
+        Returns:
+            dict: The close response object for Lex
+        """
+        logger.debug('Handling terminal step: %s', step['id'])
+
+        # Store the attribute value
+        if step['id'] not in session_attributes['step']:
+            session_attributes['step'][step['id']] = {}
+
+        session_attributes['step'][step['id']][step['attribute']] = True
+
+        # For terminal steps, provide the message and close the conversation
+        message = self._process_combined_prompt(step['prompt'])
+
+        return self.close_response(
+            session_attributes=session_attributes,
+            intent_name=intent_name,
+            message=message,
+        )
+
+    def _initialize_session_attributes(self, session_attributes):
+        """Initialize session attributes with default values if they don't exist
+
+        This helper method ensures all required session attributes are properly
+        initialized with default values.
+
+        Args:
+            session_attributes: The session attributes dictionary
+
+        Returns:
+            dict: The initialized session attributes dictionary
+        """
+        # Initialize step tracking if not present
+        if 'step' not in session_attributes:
+            session_attributes['step'] = {}
+
+        # Initialize current step if not present
+        if 'current_step' not in session_attributes:
+            session_attributes['current_step'] = 'step_1'
+
+        # Initialize retry count if not present
+        if 'retry_count' not in session_attributes:
+            session_attributes['retry_count'] = 0
+
+        # Initialize metrics if not present
+        if 'metrics' not in session_attributes:
+            session_attributes['metrics'] = {
+                'start_time': time.time(),
+                'steps_completed': 0,
+                'total_retries': 0,
+            }
+
+        return session_attributes
 
     def get_intent(self, event):
         """Extract intent from event"""
