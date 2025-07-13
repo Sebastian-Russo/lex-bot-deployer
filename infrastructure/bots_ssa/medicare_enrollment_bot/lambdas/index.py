@@ -3,6 +3,9 @@ import logging
 import os
 from typing import Any, Dict
 
+# pylint: disable=import-error
+from message_map import MessageMap  # noqa: E402
+
 logger = logging.getLogger()
 logger.setLevel(os.environ.get('LOGGING_LEVEL', 'DEBUG'))
 
@@ -114,12 +117,12 @@ class MedicareEnrollmentHandler:
                 # If yes, transfer to block_a
                 if confirmation_value == 'yes':
                     session_attributes['flowPhase'] = 'block_a'
-                    message = 'P1370English'
+                    message = MessageMap.get_message('P1370English')
 
                 # If no, transfer to main_flow
                 elif confirmation_value == 'no':
                     session_attributes['flowPhase'] = 'main_flow'
-                    message = 'P1378English + P1379English'
+                    message = MessageMap.get_message('P1378English + P1379English')
                 # Clear the confirmation slot
                 slots['Confirmation'] = None
                 # Return elicitSlotResponse
@@ -142,7 +145,7 @@ class MedicareEnrollmentHandler:
                 message = ''
                 # If yes, repeat P1378 + P1379
                 if confirmation_value == 'yes':
-                    message = 'P1378 + P1379'
+                    message = MessageMap.get_message('P1378English + P1379English')
                     # Clear the confirmation slot
                     slots['Confirmation'] = None
                     return self.elicit_slot_response(
@@ -155,7 +158,7 @@ class MedicareEnrollmentHandler:
                 # If no, transfer to main menu, end_flow
                 elif confirmation_value == 'no':
                     session_attributes['flowPhase'] = 'end_flow'
-                    message = 'P1382English'
+                    message = MessageMap.get_message('P1382English')
                     # Clear the confirmation slot
                     slots['Confirmation'] = None
                     # Return elicitSlotResponse
@@ -179,7 +182,7 @@ class MedicareEnrollmentHandler:
                 message = ''
                 # If yes, repeat P1380 + P1381
                 if confirmation_value == 'yes':
-                    message = 'P1380 + P1381'
+                    message = MessageMap.get_message('P1380English + P1381English')
                     # Clear the confirmation slot
                     slots['Confirmation'] = None
                     return self.elicit_slot_response(
@@ -192,7 +195,7 @@ class MedicareEnrollmentHandler:
                 # If no, transfer to main menu, end_flow
                 elif confirmation_value == 'no':
                     session_attributes['flowPhase'] = 'end_flow'
-                    message = 'P1382English'
+                    message = MessageMap.get_message('P1382English')
                     # Clear the confirmation slot
                     slots['Confirmation'] = None
                     # Return elicitSlotResponse
