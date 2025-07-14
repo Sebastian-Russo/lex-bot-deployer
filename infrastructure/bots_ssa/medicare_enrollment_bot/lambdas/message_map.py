@@ -25,6 +25,7 @@ class MessageMap:
         'P1377aEnglish': "Let's try again. Do you want to receive an application for help covering your medication expenses?",
         'P1382English': 'If you are finished, you can disconnect. If not, please wait and I will return you to the main menu.',
         # Block A prompts
+        'P1371English': 'Since you are not enrolled in Medicare, let me provide you with some information.',
         'P1378English': 'You can get more information about the help covering your medication expenses (known as Part D) or the Medicare state programs that can help you with your health care expenses, by calling 1-800-633-4227. That number is, 1-800-633-4227. This information is also available on your website, at www dot Medicare dot G O V.',
         'P1379English': 'Do you want to hear the information again?',
         'P1379aEnglish': "Let's try again. Do you want to hear the information about applying for Part D of Medicare again?",

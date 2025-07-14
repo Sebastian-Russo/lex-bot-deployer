@@ -1,0 +1,61 @@
+{
+    "sessionId": "30866591864836",
+    "inputTranscript": "enrollment",
+    "interpretations": [
+        {
+            "nluConfidence": 1,
+            "intent": {
+                "name": "MedicareEnrollment",
+                "slots": {
+                    "Confirmation": null
+                },
+                "state": "InProgress",
+                "confirmationState": "None"
+            },
+            "interpretationSource": "Lex"
+        },
+        {
+            "intent": {
+                "name": "FallbackIntent",
+                "slots": {},
+                "state": "InProgress",
+                "confirmationState": "None"
+            },
+            "interpretationSource": "Lex"
+        }
+    ],
+    "bot": {
+        "name": "lex-bot-deployer-medicare-enrollment",
+        "version": "DRAFT",
+        "localeId": "en_US",
+        "id": "FL2N750NAD",
+        "aliasId": "TSTALIASID",
+        "aliasName": "TestBotAlias"
+    },
+    "responseContentType": "text/plain; charset=utf-8",
+    "messageVersion": "1.0",
+    "sessionState": {
+        "sessionAttributes": {},
+        "intent": {
+            "name": "MedicareEnrollment",
+            "slots": {
+                "Confirmation": null
+            },
+            "state": "InProgress",
+            "confirmationState": "None"
+        },
+        "originatingRequestId": "8730c81c-9b36-4e80-a965-54fbc5267e13"
+    },
+    "invocationSource": "DialogCodeHook",
+    "transcriptions": [
+        {
+            "resolvedContext": {
+                "intent": "MedicareEnrollment"
+            },
+            "resolvedSlots": {},
+            "transcriptionConfidence": 1,
+            "transcription": "enrollment"
+        }
+    ],
+    "inputMode": "Text"
+}

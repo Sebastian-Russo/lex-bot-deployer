@@ -59,6 +59,16 @@ class MedicareEnrollmentHandler:
         logger.debug('Dialog hook - Intent: %s, Slots: %s', intent_name, slots)
         logger.debug('Dialog hook - Session attributes: %s', session_attributes)
 
+        # Initialize session attributes
+        session_attributes = self._initialize_session_attributes(session_attributes)
+
+        # Handle FallbackIntent by redirecting to MedicareEnrollment
+        if intent_name == 'FallbackIntent':
+            return self.elicit_intent_response(
+                session_attributes=session_attributes,
+                message='I can help you with Medicare enrollment. Would you like information about enrolling in Medicare?',
+            )
+
         if intent_name == 'MedicareEnrollment':
             logger.debug('Dialog hook - Intent: MedicareEnrollment')
 
@@ -196,7 +206,7 @@ class MedicareEnrollmentHandler:
 
             # Initialize conversation if needed
             if 'step' not in session_attributes:
-                session_attributes['step'] = {}
+                session_attributes['step'] = '{}'
                 session_attributes['retry_count'] = 0
                 session_attributes['current_step'] = 'step_1'
                 current_step = conversation_steps[0]  # Start with first step
@@ -222,6 +232,7 @@ class MedicareEnrollmentHandler:
             # Process confirmation slot
             confirmation = slots.get('Confirmation', None)
             confirmation_value = None
+            logger.debug('Confirmation slot value: %s', confirmation)
 
             # Handle terminal steps (steps that end the conversation)
             if current_step.get('is_terminal', False):
@@ -282,7 +293,9 @@ class MedicareEnrollmentHandler:
 
                     # Update metrics
                     if 'metrics' in session_attributes:
-                        session_attributes['metrics']['retries'] += 1
+                        metrics = json.loads(session_attributes['metrics'])
+                        metrics['total_retries'] = metrics.get('total_retries', 0) + 1
+                        session_attributes['metrics'] = json.dumps(metrics)
 
                     logger.debug('Invalid response, retry count: %s', retry_count)
 
@@ -305,22 +318,28 @@ class MedicareEnrollmentHandler:
             else:
                 message = self._process_combined_prompt(current_step['prompt'])
 
-                return self.elicit_slot_response(
+                response = self.elicit_slot_response(
                     slot_name='Confirmation',
                     message=message,
                     session_attributes=session_attributes,
                     intent=intent_object,
                 )
 
+                # Log the response being returned
+                logger.debug(
+                    'Dialog hook - Response: %s', json.dumps(response, indent=2)
+                )
+
+                return response
+
         # Log conversation summary before returning
         if 'metrics' in session_attributes:
-            elapsed_time = int(time.time()) - int(
-                session_attributes['metrics']['start_time']
-            )
+            metrics = json.loads(session_attributes['metrics'])
+            elapsed_time = int(time.time()) - int(metrics['start_time'])
             logger.debug(
                 'Conversation summary - Steps completed: %s, Retries: %s, Duration: %s seconds',
-                session_attributes['metrics']['steps_completed'],
-                session_attributes['metrics']['retries'],
+                metrics['steps_completed'],
+                metrics.get('total_retries', 0),
                 elapsed_time,
             )
 
@@ -435,14 +454,18 @@ class MedicareEnrollmentHandler:
         Returns:
             dict: The response object for Lex
         """
+        # Deserialize the step attribute to a dictionary
+        step_data = json.loads(session_attributes.get('step', '{}'))
+
         # Store the attribute value
-        if current_step['id'] not in session_attributes['step']:
-            session_attributes['step'][current_step['id']] = {}
+        if current_step['id'] not in step_data:
+            step_data[current_step['id']] = {}
 
         # Set attribute value based on outcome type
-        session_attributes['step'][current_step['id']][current_step['attribute']] = (
-            outcome_type == 'yes'
-        )
+        step_data[current_step['id']][current_step['attribute']] = outcome_type == 'yes'
+
+        # Serialize back to a JSON string
+        session_attributes['step'] = json.dumps(step_data)
 
         # Get next step
         next_step_id = current_step['outcomes'][outcome_type]['next']
@@ -453,7 +476,9 @@ class MedicareEnrollmentHandler:
 
         # Update metrics
         if 'metrics' in session_attributes:
-            session_attributes['metrics']['steps_completed'] += 1
+            metrics = json.loads(session_attributes['metrics'])
+            metrics['steps_completed'] += 1
+            session_attributes['metrics'] = json.dumps(metrics)
 
         # Get next step
         next_step = next(
@@ -520,11 +545,17 @@ class MedicareEnrollmentHandler:
         """
         logger.debug('Handling terminal step: %s', step['id'])
 
-        # Store the attribute value
-        if step['id'] not in session_attributes['step']:
-            session_attributes['step'][step['id']] = {}
+        # Deserialize the step attribute to a dictionary
+        step_data = json.loads(session_attributes.get('step', '{}'))
 
-        session_attributes['step'][step['id']][step['attribute']] = True
+        # Store the attribute value
+        if step['id'] not in step_data:
+            step_data[step['id']] = {}
+
+        step_data[step['id']][step['attribute']] = True
+
+        # Serialize back to a JSON string
+        session_attributes['step'] = json.dumps(step_data)
 
         # For terminal steps, provide the message and close the conversation
         message = self._process_combined_prompt(step['prompt'])
@@ -536,20 +567,10 @@ class MedicareEnrollmentHandler:
         )
 
     def _initialize_session_attributes(self, session_attributes):
-        """Initialize session attributes with default values if they don't exist
-
-        This helper method ensures all required session attributes are properly
-        initialized with default values.
-
-        Args:
-            session_attributes: The session attributes dictionary
-
-        Returns:
-            dict: The initialized session attributes dictionary
-        """
+        """Initialize session attributes if not present"""
         # Initialize step tracking if not present
         if 'step' not in session_attributes:
-            session_attributes['step'] = {}
+            session_attributes['step'] = '{}'
 
         # Initialize current step if not present
         if 'current_step' not in session_attributes:
@@ -561,11 +582,12 @@ class MedicareEnrollmentHandler:
 
         # Initialize metrics if not present
         if 'metrics' not in session_attributes:
-            session_attributes['metrics'] = {
-                'start_time': time.time(),
+            metrics = {
+                'start_time': str(int(time.time())),
                 'steps_completed': 0,
                 'total_retries': 0,
             }
+            session_attributes['metrics'] = json.dumps(metrics)
 
         return session_attributes
 
@@ -583,21 +605,35 @@ class MedicareEnrollmentHandler:
 
     def elicit_slot_response(self, slot_name, message, session_attributes, intent):
         """Return elicit slot response"""
+        # Create a completely new object with just the name field
+        simplified_intent = {'name': intent['name']}
+        
+        # Convert any dictionary values in session_attributes to strings
+        string_session_attributes = {}
+        for key, value in session_attributes.items():
+            if isinstance(value, dict):
+                string_session_attributes[key] = json.dumps(value)
+            else:
+                string_session_attributes[key] = value
+        
+        # Create a new response object with the simplified intent
         return {
             'sessionState': {
-                'dialogAction': {
-                    'type': 'ElicitSlot',
-                    'slotToElicit': slot_name,
-                },
-                'intent': intent,
+                'dialogAction': {'slotToElicit': slot_name, 'type': 'ElicitSlot'},
+                'intent': simplified_intent,
+                'sessionAttributes': string_session_attributes
+            },
+            'messages': [{'contentType': 'PlainText', 'content': message}]
+        }
+
+    def elicit_intent_response(self, session_attributes, message):
+        """Return elicit intent response"""
+        return {
+            'sessionState': {
+                'dialogAction': {'type': 'ElicitIntent'},
                 'sessionAttributes': session_attributes,
             },
-            'messages': [
-                {
-                    'contentType': 'PlainText',
-                    'content': message,
-                }
-            ],
+            'messages': [{'contentType': 'PlainText', 'content': message}],
         }
 
     def close_response(self, session_attributes, intent_name, message):
@@ -613,30 +649,21 @@ class MedicareEnrollmentHandler:
         """
         return {
             'sessionState': {
-                'dialogAction': {
-                    'type': 'Close',
-                },
+                'dialogAction': {'type': 'Close'},
                 'intent': {
                     'name': intent_name,
                     'state': 'Fulfilled',
                 },
                 'sessionAttributes': session_attributes,
             },
-            'messages': [
-                {
-                    'contentType': 'PlainText',
-                    'content': message,
-                }
-            ],
+            'messages': [{'contentType': 'PlainText', 'content': message}],
         }
 
     def delegate_response(self, session_attributes, intent_object):
         """Build "let Lex continue" response"""
         return {
             'sessionState': {
-                'dialogAction': {
-                    'type': 'Delegate',
-                },
+                'dialogAction': {'type': 'Delegate'},
                 'intent': intent_object,
                 'sessionAttributes': session_attributes,
             },
