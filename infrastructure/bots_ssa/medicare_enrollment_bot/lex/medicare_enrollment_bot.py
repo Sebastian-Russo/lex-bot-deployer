@@ -1,7 +1,9 @@
+# pylint: disable=import-error
 import os
 
 from constructs import Construct
 
+# pylint: disable=import-error
 from ....constructs.simple_bot import (
     CodeHook,
     SimpleBot,
@@ -10,6 +12,8 @@ from ....constructs.simple_bot import (
     SimpleLocale,
     SimpleSlot,
 )
+
+# pylint: disable=import-error
 from ....utils.create_lambda import create_lambda
 
 
@@ -19,14 +23,14 @@ class MedicareEnrollmentBot(Construct):
     def __init__(
         self,
         scope: Construct,
-        id: str,
+        construct_id: str,
         *,
         prefix: str,
         connect_instance_arn: str,
-        city_hall_queue_arn: str,  # For agent transfers
+        agent_transfer_queue_arn: str,  # For agent transfers
         **kwargs,
     ):
-        super().__init__(scope, id, **kwargs)
+        super().__init__(scope, construct_id, **kwargs)
 
         bot_name = f'{prefix}-medicare-enrollment'
 
@@ -38,7 +42,7 @@ class MedicareEnrollmentBot(Construct):
             function_name=f'{bot_name}-handler',
             description=f'Handles medicare enrollment conversation flow for {bot_name}',
             environment={
-                'AGENT_QUEUE_ARN': city_hall_queue_arn,
+                'AGENT_QUEUE_ARN': agent_transfer_queue_arn,
             },
         )
 

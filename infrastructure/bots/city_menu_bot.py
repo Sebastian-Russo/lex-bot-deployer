@@ -30,7 +30,7 @@ class CityMenuBot(Construct):
         *,
         prefix: str,
         connect_instance_arn: str,
-        city_hall_queue_arn: str,
+        agent_transfer_queue_arn: str,
         city_manager_flow_arn: str,
         description: Optional[str] = None,
         role=None,
@@ -69,7 +69,7 @@ class CityMenuBot(Construct):
                         confirmation='It sounds like you need to speak to city hall, is that correct?',
                         action=QueueTransferAction(
                             type='QueueTransfer',
-                            queue_arn=city_hall_queue_arn,
+                            queue_arn=agent_transfer_queue_arn,
                         ),
                     ),
                     'CITY_MANAGER': MenuItem(
@@ -155,7 +155,7 @@ class CityMenuBot(Construct):
                         confirmation='¿Entiendo que necesitas hablar con el ayuntamiento, ¿es correcto?',
                         action=QueueTransferAction(
                             type='QueueTransfer',
-                            queue_arn=city_hall_queue_arn,
+                            queue_arn=agent_transfer_queue_arn,
                         ),
                     ),
                     'CITY_MANAGER': MenuItem(

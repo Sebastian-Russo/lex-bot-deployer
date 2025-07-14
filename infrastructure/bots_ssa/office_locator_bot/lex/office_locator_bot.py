@@ -1,9 +1,12 @@
+# pylint: disable=import-error
 import os
 from typing import List, Optional
 
+# pylint: disable=import-error
 from aws_cdk import aws_iam as iam
 from constructs import Construct
 
+# pylint: disable=import-error
 from ....constructs.simple_bot import (
     CodeHook,
     SimpleBot,
@@ -12,18 +15,22 @@ from ....constructs.simple_bot import (
     SimpleLocale,
     SimpleSlot,
 )
+
+# pylint: disable=import-error
 from ....utils.create_lambda import create_lambda
 
 
 class OfficeLocatorBot(Construct):
+    """Office Locator Bot"""
+
     def __init__(
         self,
         scope: Construct,
-        id: str,
+        construct_id: str,
         *,
         prefix: str,
         connect_instance_arn: str,
-        city_hall_queue_arn: str,
+        agent_transfer_queue_arn: str,
         description: Optional[str] = None,
         role: Optional[iam.IRole] = None,
         idle_session_ttl_in_seconds: Optional[int] = 300,
@@ -32,7 +39,7 @@ class OfficeLocatorBot(Construct):
         audio_bucket=None,
         **kwargs,
     ):
-        super().__init__(scope, id, **kwargs)
+        super().__init__(scope, construct_id, **kwargs)
 
         bot_name = f'{prefix}-office-locator'
 

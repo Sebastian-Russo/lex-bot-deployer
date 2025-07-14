@@ -1,8 +1,9 @@
+from dataclasses import dataclass
+from typing import Optional
+
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_s3 as s3
-from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -18,6 +19,6 @@ class BotProps:
     nlu_confidence_threshold: Optional[float] = None
     idle_session_ttl_in_seconds: Optional[int] = None
     include_sample_flow: Optional[bool] = None
-    city_hall_queue_arn: Optional[str] = None
+    agent_transfer_queue_arn: Optional[str] = None
     city_manager_flow_arn: Optional[str] = None
     idle_session_ttl_in_seconds: Optional[int] = None

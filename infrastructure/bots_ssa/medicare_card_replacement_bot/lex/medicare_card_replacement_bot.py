@@ -101,7 +101,7 @@ class MedicareCardReplacementBot(Construct):
         *,
         prefix: str,
         connect_instance_arn: str,
-        # city_hall_queue_arn: str,
+        # agent_transfer_queue_arn: str,
         # description: Optional[str] = None,
         # role: Optional[iam.IRole] = None,
         # idle_session_ttl_in_seconds: Optional[int] = 300,

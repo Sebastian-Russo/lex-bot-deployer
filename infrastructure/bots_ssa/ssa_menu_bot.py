@@ -28,7 +28,7 @@ class SSAMenuBot(Construct):
         *,
         prefix: str,
         connect_instance_arn: str,
-        city_hall_queue_arn: str,
+        agent_transfer_queue_arn: str,
         reprint_1099_flow_arn: str,
         pamphlet_flow_arn: str,
         medicare_enrollment_flow_arn: str,

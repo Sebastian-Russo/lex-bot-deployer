@@ -23,7 +23,7 @@ class Reprint1099Bot(Construct):
         *,
         prefix: str,
         connect_instance_arn: str,
-        city_hall_queue_arn: str,  # For agent transfers
+        agent_transfer_queue_arn: str,  # For agent transfers
         description: Optional[str] = None,
         role: Optional[iam.IRole] = None,
         idle_session_ttl_in_seconds: Optional[int] = 300,
@@ -45,7 +45,7 @@ class Reprint1099Bot(Construct):
             description=f'Handles 1099 reprint conversation flow for {bot_name}',
             environment={
                 'CURRENT_TAX_YEAR': '2024',
-                'AGENT_QUEUE_ARN': city_hall_queue_arn,
+                'AGENT_QUEUE_ARN': agent_transfer_queue_arn,
             },
         )
 
